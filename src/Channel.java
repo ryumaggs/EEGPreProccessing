@@ -9,12 +9,29 @@ public class Channel {
 		}
 	}
 	
-	public static int num_freq(Channel channel){
-		return channel.freq.length;
-	}
-	
-	public Complex[][] getFreq(){
-		return this.freq;
+	public static double[] compareWaveLengths(Complex[][] base_fft, Complex[][] trial_fft){
+		/*
+		 Input: the fft data of the randomly selected base-case, and the fft of one trial for ONE PARTICULAR CHANNEL.
+		 
+		 goes through the frequencies of ONE channel in ONE trial and returns their difference distance in a
+		 double array
+		 */
+		int num_freq = base_fft.length;
+		double[] diff_dist = new double[num_freq];
+		// loop through each frequency
+		for (int i = 0; i < num_freq; i++){
+			double re_diff_sum = 0.0;
+			double im_diff_sum = 0.0;
+			//loop through each sub-wave of each frequency
+			for (int j = 0; j < base_fft[0].length; j++){
+				//subtract base from trial to get the difference and sum that difference
+				re_diff_sum += Math.abs(trial_fft[i][j].re() - (base_fft[i][j]).re());
+				im_diff_sum += Math.abs(trial_fft[i][j].im() - (base_fft[i][j]).im());
+			}
+			//compute total distance away from base of trial
+			diff_dist[i] = Math.sqrt(Math.pow(re_diff_sum, 2.0) + Math.pow(im_diff_sum, 2.0));
+		}
+		return diff_dist;
 	}
     // compute the FFT of x[], assuming its length is a power of 2
     public static Complex[] fft(Complex[] x) {
