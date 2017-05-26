@@ -32,7 +32,34 @@ public class DescisionTree {
 		}
 		rest = all_data;
 	}
+	/*
+	 * calculates the array when you add the elements of two double arrays
+	 */
+	public double[][] array_sum(double[][] a1, double[][] a2){
+		double[][] ret = new double[a1.length][a1[0].length];
+		for (int i = 0; i < a1.length; i++){
+			for (int j = 0; j < a1[0].length; j++){
+				ret[i][j] = a1[i][j] + a2[i][j];
+			}
+		}
+		return ret;
+	}
 	
+	public double[] total_diff(int base_num){
+		/*
+		 * Loops through all trials comparing to base a
+		 */
+		double[][] total_diff_0 = new double[base1.num_channels()][base1.channels1[0].num_freq()];
+		
+		// FOR ALL TRIALS of type 0 and 1 respectively, generate a double[][] that marks channels x frequency and the values are the
+		//differences in the FFT.
+		for (int i = 0; i < rest.length; i++){
+			if (rest[0].trial_type() == base_num)
+				total_diff_0 = array_sum(total_diff_0, rest[i].bestWaves(base1));
+		}
+		
+		
+	}
 
 
 	public static void main(String args[]){

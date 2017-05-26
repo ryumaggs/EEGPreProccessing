@@ -9,6 +9,9 @@ public class Channel {
 		}
 	}
 	
+	public int num_freq(){
+		return freq.length;
+	}
 	public static double[] compareWaveLengths(Complex[][] base_fft, Complex[][] trial_fft){
 		/*
 		 Input: the fft data of the randomly selected base-case, and the fft of one trial for ONE PARTICULAR CHANNEL.
@@ -28,10 +31,25 @@ public class Channel {
 				re_diff_sum += Math.abs(trial_fft[i][j].re() - (base_fft[i][j]).re());
 				im_diff_sum += Math.abs(trial_fft[i][j].im() - (base_fft[i][j]).im());
 			}
-			//compute total distance away from base of trial
+			//compute total distance away of one frequency from the base trial
 			diff_dist[i] = Math.sqrt(Math.pow(re_diff_sum, 2.0) + Math.pow(im_diff_sum, 2.0));
 		}
 		return diff_dist;
+	}
+	
+	public int minIndex(double[] distances){
+		/*
+		 * Returns the index of the lowest value in a double array: this is the best wavelength
+		 * for a particular channel
+		 */
+		double min = distances[0];
+		int min_index = 0;
+		for (int i = 0; i < distances.length; i++){
+			if (distances[i] < min)
+				min_index = i;
+		}
+		
+		return min_index;
 	}
     // compute the FFT of x[], assuming its length is a power of 2
     public static Complex[] fft(Complex[] x) {

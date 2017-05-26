@@ -1,7 +1,7 @@
 
 public class Trial {
 	private int trial_type;
-	private Channel[] channels1;
+	public Channel[] channels1;
 	
 	public Trial(int type, Channel[] channelData){
 		trial_type = type;
@@ -12,23 +12,12 @@ public class Trial {
 		return trial_type;
 	}
 	
-	public static int num_freq(Channel channels2){
-		return channels2.freq.length;
+	public int num_channels(){
+		return channels1.length;
 	}
 	
-	public int minIndex(double[] distances){
-		/*
-		 * Returns the index of the lowest value in a double array: this is the best wavelength
-		 * for a particular channel
-		 */
-		double min = distances[0];
-		int min_index = 0;
-		for (int i = 0; i < distances.length; i++){
-			if (distances[i] < min)
-				min_index = i;
-		}
-		
-		return min_index;
+	public static int num_freq(Channel channels2){
+		return channels2.freq.length;
 	}
 	
 	public double[][] bestWaves(Trial base){
