@@ -1,10 +1,12 @@
-
+//import java.util.Arrays; this was also used for testing
 public class Channel {
 	public Complex[][] freq;
 	
 	public Channel(Complex[][] eeg_values){
+		freq = new Complex[eeg_values.length][eeg_values[0].length];
 		for (int i = 0; i < eeg_values.length; i++){
 			Complex[] fftdata = fft(eeg_values[i]);
+			//System.out.println(Arrays.deepToString(fftdata));
 			freq[i] = fftdata;
 		}
 	}
@@ -13,7 +15,7 @@ public class Channel {
 		return freq.length;
 	}
 	public static double[] compareWaveLengths(Complex[][] base_fft, Complex[][] trial_fft){
-		/*
+		/* Should work
 		 Input: the fft data of the randomly selected base-case, and the fft of one trial for ONE PARTICULAR CHANNEL.
 		 
 		 goes through the frequencies of ONE channel in ONE trial and returns their difference distance in a
@@ -37,20 +39,6 @@ public class Channel {
 		return diff_dist;
 	}
 	
-	public int minIndex(double[] distances){
-		/*
-		 * Returns the index of the lowest value in a double array: this is the best wavelength
-		 * for a particular channel
-		 */
-		double min = distances[0];
-		int min_index = 0;
-		for (int i = 0; i < distances.length; i++){
-			if (distances[i] < min)
-				min_index = i;
-		}
-		
-		return min_index;
-	}
     // compute the FFT of x[], assuming its length is a power of 2
     public static Complex[] fft(Complex[] x) {
         int n = x.length;
@@ -85,4 +73,25 @@ public class Channel {
         }
         return y;
     }
+    /* Main function is for testing purposes
+    public static void main(String args[]){
+    	Complex[][] test_1 = new Complex[4][4];
+    	for (int i = 0; i < test_1.length; i++){
+    		for (int j = 0; j < test_1.length; j++){
+    			test_1[i][j] = new Complex((i+j+6),j-i+2);
+    		}
+    	}
+    	Channel fft_test = new Channel(test_1);
+    	
+    	//System.out.println(Arrays.deepToString(fft_test.freq));
+    	
+    	Complex[][] test_2 = new Complex[4][4];
+    	for (int i = 0; i < test_2.length; i++){
+    		for (int j = 0; j < test_2.length; j++){
+    			test_2[i][j] = new Complex((i+j+6),j-i+2);
+    		}
+    	}
+    	System.out.println(Arrays.toString(compareWaveLengths(fft_test.freq,test_2)));
+    	
+    }*/
 }

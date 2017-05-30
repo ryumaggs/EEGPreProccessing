@@ -36,4 +36,8 @@ public class Trial {
 		return bWave;
 	}
 	
+	public static void main(String args[]){
+		//nothing
+	}
+	
 }

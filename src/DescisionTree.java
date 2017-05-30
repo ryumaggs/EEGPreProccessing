@@ -45,25 +45,56 @@ public class DescisionTree {
 		return ret;
 	}
 	
-	public double[] total_diff(int base_num){
+	public int minIndex(double[] distances){
+		/*
+		 * Returns the index of the lowest value in a double array: this is the best wavelength
+		 * for a particular channel
+		 */
+		double min = distances[0];
+		int min_index = 0;
+		for (int i = 0; i < distances.length; i++){
+			if (distances[i] < min)
+				min_index = i;
+		}
+		
+		return min_index;
+	}
+	
+	public int[] total_diff(int base_num){
 		/*
 		 * Loops through all trials comparing to base a
 		 */
 		double[][] total_diff_0 = new double[base1.num_channels()][base1.channels1[0].num_freq()];
+		double[][] total_diff_1 = new double[base1.num_channels()][base1.channels1[0].num_freq()];
+		int[] ret = new int[base1.num_channels()];
 		
 		// FOR ALL TRIALS of type 0 and 1 respectively, generate a double[][] that marks channels x frequency and the values are the
 		//differences in the FFT.
 		for (int i = 0; i < rest.length; i++){
-			if (rest[0].trial_type() == base_num)
+			if (rest[0].trial_type() == base_num){
+				//gives you an array with total distances between all trials for all channels
 				total_diff_0 = array_sum(total_diff_0, rest[i].bestWaves(base1));
+			}
+			else{
+				total_diff_1 = array_sum(total_diff_1, rest[i].bestWaves(base2));
+			}
 		}
 		
+		if (base_num == 0){
+			for (int i = 0; i < base1.num_channels(); i++)
+				ret[i] = minIndex(total_diff_0[i]);
+		}
+		else{
+			for (int i = 0; i < base1.num_channels(); i++)
+				ret[i] = minIndex(total_diff_0[i]);
+		}
+		
+		return ret;
 		
 	}
 
 
 	public static void main(String args[]){
-		int num_channels = 0;
 		
 		//nothing
 	}
