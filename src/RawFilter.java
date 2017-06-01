@@ -9,6 +9,12 @@ public class RawFilter {
 		parseData(rawData, chan, numsample);
 		Complex[][] transposed = transpose(parsedunfilteredData);
 		parsedunfilteredData = transposed;
+		
+		Complex[][] filtereddata = bandpassfilter(parsedunfilteredData, 250, 8, 12);
+		parsedunfilteredData = filtereddata;
+		for (int i = 0; i < parsedunfilteredData.length; i++){
+			System.out.println(Arrays.toString(parsedunfilteredData[i]));
+		}
 	}
 	
 	//Given a OpenBCI file, parse it into a 2D array of timesample by channels
@@ -73,7 +79,7 @@ public class RawFilter {
 					filtereddata[channel][freq] = filtereddata[channel][freq].scale(2);
 				}
 				else{
-					filtereddata[channel][freq] = filtereddata[channel][freq].scale(0);
+					filtereddata[channel][freq] = filtereddata[channel][freq].scale(.1);
 				}
 			}
 		}
@@ -83,7 +89,6 @@ public class RawFilter {
 		//RawFilter test = new RawFilter("BCItester.txt", 4, 256);
 		//Complex[][] data = test.getParsedData();
 		//Complex[][] filtereddata = bandpassfilter(data, 250, 8, 12);
-		filterGUI j = new filterGUI();
 
 	}
 }

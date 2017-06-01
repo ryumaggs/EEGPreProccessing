@@ -6,6 +6,7 @@ public class filterGUI extends Frame implements ActionListener{
 	private Button base1;
 	private Button base2;
 	private Button remTrials;
+	private Button go;
 
 	private String base1path;
 	private String base2path;
@@ -30,16 +31,19 @@ public class filterGUI extends Frame implements ActionListener{
 		
 		//Set up the JPanel and buttons
 		panel = new JPanel();
+		go = new Button("Run Mu Filter");
 		base1 = new Button("Base1");
 		base2 = new Button("Base2");
 		remTrials = new Button("Remaining Trials");
 		
+		go.addActionListener(this);
 		base1.addActionListener(this);
 		base2.addActionListener(this);
 		remTrials.addActionListener(this);
 		
 
 		//Add everything to the JFrame
+		panel.add(go);
 		panel.add(base1);
 		panel.add(base2);
 		panel.add(remTrials);
@@ -59,8 +63,7 @@ public class filterGUI extends Frame implements ActionListener{
 		 * And it saves the path into a String
 		 */
 		Object holder = e.getSource();
-		
-		
+
 		if (holder == base1 | holder == base2 | holder == remTrials){
 			JFileChooser chose = new JFileChooser();
 			chose.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
@@ -80,6 +83,9 @@ public class filterGUI extends Frame implements ActionListener{
 			else if (result == JFileChooser.CANCEL_OPTION){
 				System.out.println("Cancel was selected");
 			}
+		}
+		else if (holder == go){
+			new RawFilter(base1path,8,16);
 		}
 		frame.add(panel);
 		frame.pack();
