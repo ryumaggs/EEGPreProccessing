@@ -85,6 +85,26 @@ public class RawFilter {
 		}
 		return filtereddata;
 	}
+	
+	public static void readFilesInDir(String fileName){
+		//nothing
+	}
+	
+	public static void writeToFile(String fileName, Complex[][] filteredData){
+		try{
+			BufferedWriter bw = new BufferedWriter(new FileWriter(fileName));
+			
+			for (int i = 0; i < filteredData.length; i++){
+				for (int j = 0; j < filteredData[i].length; j++){
+					bw.write(filteredData[i][j].toString() + ((j == filteredData.length-1) ? "" : ","));
+				}
+				bw.newLine();
+			}
+			bw.flush();
+			bw.close();
+		} catch (IOException e){}
+	}
+	
 	public static void main(String[] args){
 		//RawFilter test = new RawFilter("BCItester.txt", 4, 256);
 		//Complex[][] data = test.getParsedData();
