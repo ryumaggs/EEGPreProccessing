@@ -79,10 +79,11 @@ public class RawFilter {
 		}
 		return filtereddata;
 	}
-	
 	public static void main(String[] args){
-		RawFilter test = new RawFilter("BCItester.txt", 4, 256);
-		Complex[][] data = test.getParsedData();
-		Complex[][] filtereddata = bandpassfilter(data, 250, 8, 12);
+		//RawFilter test = new RawFilter("BCItester.txt", 4, 256);
+		//Complex[][] data = test.getParsedData();
+		//Complex[][] filtereddata = bandpassfilter(data, 250, 8, 12);
+		filterGUI j = new filterGUI();
+
 	}
 }
