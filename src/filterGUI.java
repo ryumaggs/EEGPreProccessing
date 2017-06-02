@@ -12,6 +12,11 @@ public class filterGUI extends Frame implements ActionListener{
 	private String base2path;
 	private String restTrialsDirPath; // save a directory
 	
+	private TextField b1path = new TextField(10);
+	private TextField b2path = new TextField(10);
+	private TextField rpath = new TextField(10);
+
+	
 	JPanel panel;
 	JFrame frame;
 	public filterGUI(){
@@ -24,7 +29,7 @@ public class filterGUI extends Frame implements ActionListener{
 
 		
 		//Set up the JFrame
-		frame = new JFrame();
+		frame = new JFrame("EEG Filter");
 		frame.setSize(300,300);
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -36,13 +41,19 @@ public class filterGUI extends Frame implements ActionListener{
 		base2 = new Button("Base2");
 		remTrials = new Button("Remaining Trials");
 		
+		b1path = new TextField("Path for base 1");
+		b2path = new TextField("Path for base 2");
+		rpath = new TextField("Path for directory containing all trials");
+		
 		go.addActionListener(this);
 		base1.addActionListener(this);
 		base2.addActionListener(this);
 		remTrials.addActionListener(this);
-		
 
 		//Add everything to the JFrame
+		panel.add(b1path);
+		panel.add(b2path);
+		panel.add(rpath);
 		panel.add(go);
 		panel.add(base1);
 		panel.add(base2);
@@ -70,24 +81,30 @@ public class filterGUI extends Frame implements ActionListener{
 		
 			int result = chose.showSaveDialog(this);
 			if (result == JFileChooser.APPROVE_OPTION){
-				TextField path = new TextField();
-				path.setText(chose.getSelectedFile().getAbsolutePath());
-				if (e.getSource() == base1)
-					base1path = path.getText();
-				else if (e.getSource() == base2)
-					base2path = path.getText();
-				else if (e.getSource() == remTrials)
-					restTrialsDirPath = path.getText();
-				panel.add(path);
+				if (e.getSource() == base1){
+					b1path.setText(chose.getSelectedFile().getAbsolutePath());
+					base1path = b1path.getText();
+				}
+				else if (e.getSource() == base2){
+					b2path.setText(chose.getSelectedFile().getAbsolutePath());
+					base2path = b2path.getText();
+				}
+				else if (e.getSource() == remTrials){
+					rpath.setText(chose.getSelectedFile().getAbsolutePath());
+					restTrialsDirPath = rpath.getText();
+				}
 			}
 			else if (result == JFileChooser.CANCEL_OPTION){
 				System.out.println("Cancel was selected");
 			}
 		}
 		else if (holder == go){
-			new RawFilter(base1path,8,16);
+			if (base1path != null)
+				new RawFilter(base1path,8,16);
+			else
+				System.out.println("no filepath");
 		}
-		frame.add(panel);
+		//frame.add(panel);
 		frame.pack();
 		frame.setVisible(true);
 		
