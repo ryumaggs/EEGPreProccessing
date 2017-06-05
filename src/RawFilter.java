@@ -124,6 +124,18 @@ public class RawFilter {
 		//RawFilter test = new RawFilter("BCItester.txt", 4, 256);
 		//Complex[][] data = test.getParsedData();
 		//Complex[][] filtereddata = bandpassfilter(data, 250, 8, 12);
-		
+		//String dirp = "C:/Users/'Ryan Yu'/Desktop/application.windows64/SavedData";
+		//File asdasd = new File(dirp);
+		//if (asdasd.isDirectory()){
+			//System.out.println("dirp is a directory");
+		//}
+		//File[] listOfFiles = asdasd.listFiles();
+		//System.out.println(Arrays.toString(listOfFiles));
+		//System.out.println("got here1111");
+		//for (int i = 0; i < listOfFiles.length; i++){
+			//System.out.println("got here");
+			//System.out.println(listOfFiles[i].getName());
+		//}
+		//new RawFilter(dirp,8,16);
 	}
 }
