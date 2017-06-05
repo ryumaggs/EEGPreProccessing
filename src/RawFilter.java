@@ -3,35 +3,48 @@ import java.io.*;
 
 public class RawFilter {
 	private Complex[][] parsedunfilteredData;
+	private Complex[][] filteredData;
 	
-	public RawFilter(String rawData, int chan, int numsample){
-		parsedunfilteredData = new Complex[numsample][chan];
-		parseData(rawData, chan, numsample);
-		Complex[][] transposed = transpose(parsedunfilteredData);
-		parsedunfilteredData = transposed;
+	/*
+	 * for each file in the directory:
+	 * open it
+	 * transpose it
+	 * fft
+	 * filter
+	 * (convert back?) maybe
+	 * write to a new data file? maybe
+	 */
+	public RawFilter(String dirPath, int chan, int numsample){
+		File folder = new File(dirPath);
+		File[] listOfFiles = folder.listFiles();
 		
-		Complex[][] filtereddata = bandpassfilter(parsedunfilteredData, 250, 8, 12);
-		parsedunfilteredData = filtereddata;
-		for (int i = 0; i < parsedunfilteredData.length; i++){
-			System.out.println(Arrays.toString(parsedunfilteredData[i]));
+		for(File file : listOfFiles){
+			if (file.isFile()){
+				parsedunfilteredData = new Complex[numsample][chan];
+				filteredData = new Complex[numsample][chan];
+				parseData(file, chan, numsample);
+				Complex[][] transposed = transpose(parsedunfilteredData);
+				parsedunfilteredData = transposed;
+		
+				filteredData = bandpassfilter(parsedunfilteredData, 250, 8, 12);
+				for (int i = 0; i < filteredData.length; i++){
+					System.out.println(Arrays.toString(parsedunfilteredData[i]));
+				}
+			}
 		}
 	}
 	
 	//Given a OpenBCI file, parse it into a 2D array of timesample by channels
-	private void parseData(String rawData, int chan, int numsample){
-		File file = new File(rawData);
+	private void parseData(File dataFile, int chan, int numsample){
 		Scanner scan;
 		try {
-			scan = new Scanner(file);
+			scan = new Scanner(dataFile);
 			for(int i=0; i <=5; i++){
 				System.out.println(scan.nextLine());
 			}
 			for(int idx=0; idx<numsample; idx++){
 				trialParser(scan.nextLine(), chan, idx);
 			}
-//			for(int i=0; i<256; i++){
-//				System.out.println(parsedunfilteredData[i][3].re());
-//			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -65,6 +78,7 @@ public class RawFilter {
 	public Complex[][] getParsedData(){
 		return parsedunfilteredData;
 	}
+	
 	public static Complex[][] bandpassfilter(Complex[][] data, int samprate, int lpfreq, int hpfreq){
 		int ccount = data.length;
 		int tcount = data[0].length;
@@ -90,9 +104,10 @@ public class RawFilter {
 		//nothing
 	}
 	
-	public static void writeToFile(String fileName, Complex[][] filteredData){
+	public static void writeToFile(String destination, String fileName, Complex[][] filteredData){
 		try{
-			BufferedWriter bw = new BufferedWriter(new FileWriter(fileName));
+			File file = new File(destination + "\\" + fileName);
+			BufferedWriter bw = new BufferedWriter(new FileWriter(file));
 			
 			for (int i = 0; i < filteredData.length; i++){
 				for (int j = 0; j < filteredData[i].length; j++){
@@ -109,6 +124,6 @@ public class RawFilter {
 		//RawFilter test = new RawFilter("BCItester.txt", 4, 256);
 		//Complex[][] data = test.getParsedData();
 		//Complex[][] filtereddata = bandpassfilter(data, 250, 8, 12);
-
+		
 	}
 }

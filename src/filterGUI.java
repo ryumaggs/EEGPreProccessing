@@ -8,8 +8,8 @@ public class filterGUI extends Frame implements ActionListener{
 	private Button go;
 	private Button destination;
 
-	private String restTrialsDirPath; // save a directory
-	private String destinationPath;
+	private static String restTrialsDirPath; // save a directory
+	private static String destinationPath;
 	
 	private TextField rpath;
 	private TextField dpath;
@@ -57,6 +57,10 @@ public class filterGUI extends Frame implements ActionListener{
 		frame.setVisible(true);
 	}
 	
+	//returns the destination path
+	public static String getDestPath(){
+			return destinationPath;
+	}
 
 	public void actionPerformed(ActionEvent e){
 		/*
@@ -76,6 +80,7 @@ public class filterGUI extends Frame implements ActionListener{
 				if (holder == remTrials){
 					rpath.setText(chose.getSelectedFile().getAbsolutePath());
 					restTrialsDirPath = rpath.getText();
+					//System.out.println(restTrialsDirPath);
 				}
 				else if (holder == destination){
 					dpath.setText(chose.getSelectedFile().getAbsolutePath());
