@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import java.io.*;
 
 public class filterGUI extends Frame implements ActionListener{
 
@@ -72,7 +73,7 @@ public class filterGUI extends Frame implements ActionListener{
 		Object holder = e.getSource();
 
 		if (holder == remTrials || holder == destination){
-			JFileChooser chose = new JFileChooser();
+			JFileChooser chose = new JFileChooser(new File(System.getProperty("user.home") + System.getProperty("file.seperator")+"Desktop"));
 			chose.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 			int result = chose.showSaveDialog(this);
 			
@@ -93,7 +94,7 @@ public class filterGUI extends Frame implements ActionListener{
 		}
 		else if (holder == go){
 			if (restTrialsDirPath != null)
-				new RawFilter(restTrialsDirPath,8,16);
+				new RawFilter(restTrialsDirPath,destinationPath, 8,16);
 			else
 				System.out.println("no filepath");
 		}
