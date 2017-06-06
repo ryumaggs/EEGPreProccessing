@@ -11,8 +11,8 @@ public class RawFilter {
 	 * transpose it
 	 * fft
 	 * filter
-	 * (convert back) maybe
-	 * write to a new data file? maybe
+	 * (convert back) yes
+	 * write to a new data file, yes
 	 */
 	public RawFilter(String dirPath, String destination, int chan, int numsample){
 		//System.out.println(dirPath);
@@ -65,12 +65,11 @@ public class RawFilter {
 	}
 	
 	private Complex[][] transpose(Complex[][] inputarray){
-		int num_channels = inputarray[0].length; //original collumns (8)
-		int num_input = inputarray.length; // original rows (16)
+		int num_channels = inputarray[0].length;
+		int num_input = inputarray.length;
 		Complex[][] tArray = new Complex[num_channels][num_input];
-		//System.out.println("tArray is a : " + num_channels + " by " + num_input + " array");
-		for(int coll=0; coll<num_channels; coll++){ // loop through collumns of original
-			for(int row=0; row<num_input; row++){ // loop through each row of each collumn
+		for(int coll=0; coll<num_channels; coll++){ 
+			for(int row=0; row<num_input; row++){ 
 				tArray[coll][row] = inputarray[row][coll]; 
 			}
 		}
@@ -107,26 +106,23 @@ public class RawFilter {
 		try{
 			//go through each channel (row), and add each channel data to its respective file
 			for (int i = 0; i < filteredData.length; i++){
-				//need to adjust the filename here
 				//if the channel file exists, just append as a new line to channel data
-				File file = new File(destination + "\\Channel"+(i+1));
+				File file = new File(destination + "\\Channel"+i);
 				if (file.exists()){
 					FileWriter fw = new FileWriter(destination+"\\Channel"+i,true);
 					BufferedWriter bw = new BufferedWriter(fw);
 					PrintWriter out = new PrintWriter(bw);
 					
-					out.println("file exists and currently writing data");
 					for (int j = 0; j < filteredData[i].length; j++){
-						out.print(filteredData[i][j].toString() + ((j == filteredData[j].length-1) ? ", 1\n" : ","));
+						out.print(filteredData[i][j].toString() + ((j == filteredData[i].length-1) ? ", 1\n" : ","));
 					}
 					out.close();
 				}
 				//if channel file doesn't exist, create new channel file and write to it
 				else{
 					BufferedWriter bw = new BufferedWriter(new FileWriter(file));
-					bw.write("data didn't exist halp me");
 					for (int j = 0; j < filteredData[i].length; j++){
-						bw.write(filteredData[i][j].toString() + ((j == filteredData[j].length-1) ? ", 1" : ","));
+						bw.write(filteredData[i][j].toString() + ((j == filteredData[i].length-1) ? ", 1" : ","));
 					}
 					bw.newLine();
 					bw.flush();
