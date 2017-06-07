@@ -10,7 +10,15 @@ public class filterGUI extends Frame implements ActionListener{
 	private Button destination;
 	private Button expOne;
 	private Button expTwo;
-
+	//swtich these to experiment.java
+	//---------------------------
+	private Button desti;
+	private Button pictures;
+	private Button gogo;
+	private static String expPicPath;
+	private static String savePath;
+	//--------------------------
+	
 	private static String restTrialsDirPath; // save a directory
 	private static String destinationPath;
 	
@@ -30,12 +38,15 @@ public class filterGUI extends Frame implements ActionListener{
 		
 		//Set up the JFrame
 		frame = new JFrame("EEG Filter");
-		frame.setSize(300,300);
+		frame.setSize(400,200);
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		//Set up the JPanel and buttons
 		panel = new JPanel();
+		FlowLayout GUILayout = new FlowLayout();
+		panel.setLayout(GUILayout);
+		GUILayout.setAlignment(FlowLayout.TRAILING);
 		go = new Button("Run Mu Filter");
 		remTrials = new Button("Remaining Trials");
 		destination = new Button("Destination Folder");
@@ -59,10 +70,11 @@ public class filterGUI extends Frame implements ActionListener{
 		panel.add(remTrials);
 		panel.add(expOne);
 		panel.add(expTwo);
+		panel.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
 		frame.add(panel);
 		
 		//Show Frame
-		frame.pack();
+		//frame.pack();
 		frame.setVisible(true);
 	}
 	
@@ -106,17 +118,85 @@ public class filterGUI extends Frame implements ActionListener{
 			else
 				System.out.println("no filepath");
 		}
-		else if (holder == expOne)
-			runExperiment(1);
-		else if (holder == expTwo)
-			runExperiment(2);
+		else if (holder == expOne || holder == expTwo)
+			runExperiment();
 		
+		//Move this to experiment.java
+		else if (holder == pictures || holder == desti){
+			JFileChooser chose2 = new JFileChooser(new File(System.getProperty("user.home") + System.getProperty("file.seperator")+"Desktop"));
+			chose2.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+			int result = chose2.showSaveDialog(this);
+			
+			if (result == JFileChooser.APPROVE_OPTION){
+				if (holder == pictures){
+					expPicPath = chose2.getSelectedFile().getAbsolutePath();
+				}
+				else if (holder == desti){
+					savePath = chose2.getSelectedFile().getAbsolutePath();
+				}
+			}
+			else if (result == JFileChooser.CANCEL_OPTION){
+				System.out.println("Cancel was selected");
+			}
+		}
+		else if (holder == gogo){
+			System.out.println("begining experiment");
+			beginExp();
+			}
 		//frame.add(panel);
-		frame.pack();
+		//frame.pack();
 		frame.setVisible(true);
 		
 	}
-	public static void runExperiment(int type){
+	public void runExperiment(){
+		frame.setState(Frame.ICONIFIED);
+		JFrame exp = new JFrame("herro");
+		exp.setLocationRelativeTo(null);
+		exp.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		JPanel eegExperiment = new JPanel();
+		FlowLayout experimentLayout = new FlowLayout();
+		
+		eegExperiment.setLayout(experimentLayout);
+		eegExperiment.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
+		
+		//move buttons to parameter of experiment
+		desti = new Button("Destination Foler");
+		pictures = new Button("Picture Folder");
+		gogo = new Button("begin");
+		
+		desti.addActionListener(this);
+		pictures.addActionListener(this);
+		gogo.addActionListener(this);
+		
+		eegExperiment.add(desti);
+		eegExperiment.add(pictures);
+		eegExperiment.add(gogo);
+		
+		exp.add(eegExperiment);
+		exp.pack();
+		exp.setVisible(true);
+	}
+	
+	public void beginExp(){
+		JFrame exp2 = new JFrame("asijaisj");
+		exp2.setSize(1000, 1000);
+		JPanel tester = new JPanel(new BorderLayout());
+		
+		System.out.println("expPicPath");
+		ImageIcon image = new ImageIcon(expPicPath);
+		JLabel label = new JLabel("", image, JLabel.CENTER);
+		tester.add(label, BorderLayout.CENTER );
+		
+		exp2.setExtendedState(JFrame.MAXIMIZED_BOTH);
+		exp2.add(tester);
+		exp2.setUndecorated(true);
+		exp2.setVisible(true);
+		
+		scrollImages();
+	}
+	
+	public void scrollImages(){
+		//nothing
 		
 	}
 	
