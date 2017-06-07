@@ -8,6 +8,8 @@ public class filterGUI extends Frame implements ActionListener{
 	private Button remTrials;
 	private Button go;
 	private Button destination;
+	private Button expOne;
+	private Button expTwo;
 
 	private static String restTrialsDirPath; // save a directory
 	private static String destinationPath;
@@ -37,6 +39,8 @@ public class filterGUI extends Frame implements ActionListener{
 		go = new Button("Run Mu Filter");
 		remTrials = new Button("Remaining Trials");
 		destination = new Button("Destination Folder");
+		expOne = new Button("Run Experiment: Open Hand");
+		expTwo = new Button("Run Experiment: Two");
 
 		rpath = new TextField("Path for directory containing all trials");
 		dpath = new TextField("Path for destination directory");
@@ -44,6 +48,8 @@ public class filterGUI extends Frame implements ActionListener{
 		go.addActionListener(this);
 		remTrials.addActionListener(this);
 		destination.addActionListener(this);
+		expOne.addActionListener(this);
+		expTwo.addActionListener(this);
 
 		//Add everything to the JFrame
 		panel.add(rpath);
@@ -51,6 +57,8 @@ public class filterGUI extends Frame implements ActionListener{
 		panel.add(go);
 		panel.add(destination);
 		panel.add(remTrials);
+		panel.add(expOne);
+		panel.add(expTwo);
 		frame.add(panel);
 		
 		//Show Frame
@@ -98,11 +106,21 @@ public class filterGUI extends Frame implements ActionListener{
 			else
 				System.out.println("no filepath");
 		}
+		else if (holder == expOne)
+			runExperiment(1);
+		else if (holder == expTwo)
+			runExperiment(2);
+		
 		//frame.add(panel);
 		frame.pack();
 		frame.setVisible(true);
 		
 	}
+	public static void runExperiment(int type){
+		
+	}
+	
+	
 	public static void main(String args[]){
 		new filterGUI();
 
