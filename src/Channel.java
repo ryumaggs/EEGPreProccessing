@@ -73,6 +73,32 @@ public class Channel {
         }
         return y;
     }
+    //Computes the inverse of an fft
+    public static Complex[] ifft(Complex[] x) {
+        int n = x.length;
+        Complex[] y = new Complex[n];
+
+        // take conjugate
+        for (int i = 0; i < n; i++) {
+            y[i] = x[i].conjugate();
+        }
+
+        // compute forward FFT
+        y = fft(y);
+
+        // take conjugate again
+        for (int i = 0; i < n; i++) {
+            y[i] = y[i].conjugate();
+        }
+
+        // divide by n
+        for (int i = 0; i < n; i++) {
+            y[i] = y[i].scale(1.0 / n);
+        }
+
+        return y;
+    }
+    
     /* Main function is for testing purposes
     public static void main(String args[]){
     	Complex[][] test_1 = new Complex[4][4];

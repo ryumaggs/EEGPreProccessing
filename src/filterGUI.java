@@ -114,7 +114,7 @@ public class filterGUI extends Frame implements ActionListener{
 		}
 		else if (holder == go){
 			if (restTrialsDirPath != null)
-				new RawFilter(restTrialsDirPath,destinationPath, 8,16);
+				new RawFilter(restTrialsDirPath,destinationPath, 8,256);
 			else
 				System.out.println("no filepath");
 		}
