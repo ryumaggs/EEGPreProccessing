@@ -10,6 +10,7 @@ public class filterGUI extends Frame implements ActionListener{
 	private Button destination;
 	private Button expOne;
 	private Button expTwo;
+	private Button train_and_predict;
 	//swtich these to experiment.java
 	//---------------------------
 	private Button desti;
@@ -50,6 +51,7 @@ public class filterGUI extends Frame implements ActionListener{
 		go = new Button("Run Mu Filter");
 		remTrials = new Button("Remaining Trials");
 		destination = new Button("Destination Folder");
+		train_and_predict = new Button("train and predict");
 		expOne = new Button("Run Experiment: Open Hand");
 		expTwo = new Button("Run Experiment: Two");
 
@@ -61,6 +63,7 @@ public class filterGUI extends Frame implements ActionListener{
 		destination.addActionListener(this);
 		expOne.addActionListener(this);
 		expTwo.addActionListener(this);
+		train_and_predict.addActionListener(this);
 
 		//Add everything to the JFrame
 		panel.add(rpath);
@@ -68,6 +71,7 @@ public class filterGUI extends Frame implements ActionListener{
 		panel.add(go);
 		panel.add(destination);
 		panel.add(remTrials);
+		panel.add(train_and_predict);
 		panel.add(expOne);
 		panel.add(expTwo);
 		panel.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
@@ -118,6 +122,12 @@ public class filterGUI extends Frame implements ActionListener{
 			else
 				System.out.println("no filepath");
 		}
+		
+		else if(holder == train_and_predict){
+			frame.dispose();
+			new train_and_predict();
+		}
+		
 		else if (holder == expOne || holder == expTwo)
 			runExperiment();
 		
