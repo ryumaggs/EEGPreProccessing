@@ -4,6 +4,8 @@ import java.io.*;
 public class RawFilter {
 	private Complex[][] parsedunfilteredData;
 	private Complex[][] filteredData;
+	final String CLOSED = "CLOSED";
+	final String OPEN = "OPEN";
 	
 	/*
 	 * for each file in the directory:
@@ -21,6 +23,7 @@ public class RawFilter {
 		
 		for(File file : listOfFiles){
 			if (file.isFile()){
+				int tp = check_type(file);
 				parsedunfilteredData = new Complex[numsample][chan];
 				filteredData = new Complex[chan][numsample];
 				parseData(file, chan, numsample);
@@ -32,9 +35,21 @@ public class RawFilter {
 				for (int i = 0; i < transposed.length; i++){
 					System.out.println(Arrays.toString(inversed[i]));
 				}
-				writeToFile(destination,1,inversed);
+				writeToFile(destination,tp,inversed);
 			}
 		}
+	}
+	
+	public int check_type(File file){
+		//System.out.print(file.getName());
+		String name = file.getName();
+		for (int i = 0; i < CLOSED.length(); i++){
+			if (!(name.substring(i,i+1).equals(CLOSED.substring(i, i+1)))){
+				return -1;
+			}
+		}
+	
+		return 1;
 	}
 	
 	//Given a OpenBCI file, parse it into a 2D array of timesample by channels
@@ -92,7 +107,7 @@ public class RawFilter {
 		for(int channel=0; channel<ccount; channel++){
 			for(int freq=0; freq<tcount; freq++){
 				double curFreq = (double)freq * samprate / tcount;
-				System.out.println("looking at frequency of : " + curFreq);
+				//System.out.println("looking at frequency of : " + curFreq);
 				if(curFreq >= lpfreq && curFreq <= hpfreq){
 					filtereddata[channel][freq] = filtereddata[channel][freq].scale(2);
 				}
@@ -100,7 +115,6 @@ public class RawFilter {
 					filtereddata[channel][freq] = filtereddata[channel][freq].scale(0);
 				}
 			}
-			//need to add reverse fft here
 		}
 		return filtereddata;
 	}
@@ -117,21 +131,30 @@ public class RawFilter {
 		try{
 			//go through each channel (row), and add each channel data to its respective file
 			for (int i = 0; i < filteredData.length; i++){
-				//if the channel file exists, just append as a new line to channel data
-				File file = new File(destination + "\\Channel"+i);
-				FileWriter fw = new FileWriter(file,true);
-				BufferedWriter bw = new BufferedWriter(fw);
-				PrintWriter out = new PrintWriter(bw);
-				out.print("1 ");
-				for (int j = 0; j < filteredData[i].length; j++){
-					if (filteredData[i][j].re() != 0 && filteredData[i][j].im() != 0){
-						out.print(j+":"+filteredData[i][j].abs()+" ");
+				if (isEmptyArray(filteredData[i])== false){
+					File file = new File(destination + "\\Channel"+i+".txt");
+					FileWriter fw = new FileWriter(file,true);
+					BufferedWriter bw = new BufferedWriter(fw);
+					PrintWriter out = new PrintWriter(bw);
+					out.print(trial_type + " ");
+					for (int j = 0; j < filteredData[i].length; j++){
+						if (filteredData[i][j].re() != 0 && filteredData[i][j].im() != 0){
+							out.print(j+":"+filteredData[i][j].abs()+" ");
+						}
 					}
+					out.print("\n");
+					out.close();
 				}
-				out.print("\n");
-				out.close();
 			}
 		} catch (IOException e){}
+	}
+	
+	public static boolean isEmptyArray(Complex[] arr){
+		for (int i = 0; i < arr.length; i++){
+			if (arr[i].re() != 0.0 && arr[i].im() != 0.0)
+				return false;
+		}
+		return true;
 	}
 	
 	public static void main(String[] args){
