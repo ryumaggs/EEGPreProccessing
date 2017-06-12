@@ -151,7 +151,7 @@ public class filterGUI extends Frame implements ActionListener{
 		}
 		else if (holder == gogo){
 			System.out.println("begining experiment");
-			beginExp();
+			Experiment.beginExp(expPicPath);
 			}
 		//frame.add(panel);
 		//frame.pack();
@@ -185,29 +185,6 @@ public class filterGUI extends Frame implements ActionListener{
 		exp.add(eegExperiment);
 		exp.pack();
 		exp.setVisible(true);
-	}
-	
-	public void beginExp(){
-		JFrame exp2 = new JFrame("asijaisj");
-		exp2.setSize(1000, 1000);
-		JPanel tester = new JPanel(new BorderLayout());
-		
-		System.out.println("expPicPath");
-		ImageIcon image = new ImageIcon(expPicPath);
-		JLabel label = new JLabel("", image, JLabel.CENTER);
-		tester.add(label, BorderLayout.CENTER );
-		
-		exp2.setExtendedState(JFrame.MAXIMIZED_BOTH);
-		exp2.add(tester);
-		exp2.setUndecorated(true);
-		exp2.setVisible(true);
-		
-		scrollImages();
-	}
-	
-	public void scrollImages(){
-		//nothing
-		
 	}
 	
 	
