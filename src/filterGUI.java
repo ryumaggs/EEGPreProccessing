@@ -128,63 +128,15 @@ public class filterGUI extends Frame implements ActionListener{
 			new train_and_predict();
 		}
 		
-		else if (holder == expOne || holder == expTwo)
-			runExperiment();
-		
-		//Move this to experiment.java
-		else if (holder == pictures || holder == desti){
-			JFileChooser chose2 = new JFileChooser(new File(System.getProperty("user.home") + System.getProperty("file.seperator")+"Desktop"));
-			chose2.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-			int result = chose2.showSaveDialog(this);
-			
-			if (result == JFileChooser.APPROVE_OPTION){
-				if (holder == pictures){
-					expPicPath = chose2.getSelectedFile().getAbsolutePath();
-				}
-				else if (holder == desti){
-					savePath = chose2.getSelectedFile().getAbsolutePath();
-				}
-			}
-			else if (result == JFileChooser.CANCEL_OPTION){
-				System.out.println("Cancel was selected");
-			}
-		}
-		else if (holder == gogo){
+		else if (holder == expOne){
 			System.out.println("begining experiment");
-			Experiment.beginExp(expPicPath);
+			String[] arg = new String[]{"123"};
+			Experiment.main(arg);
 			}
 		//frame.add(panel);
 		//frame.pack();
 		frame.setVisible(true);
 		
-	}
-	public void runExperiment(){
-		frame.setState(Frame.ICONIFIED);
-		JFrame exp = new JFrame("herro");
-		exp.setLocationRelativeTo(null);
-		exp.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		JPanel eegExperiment = new JPanel();
-		FlowLayout experimentLayout = new FlowLayout();
-		
-		eegExperiment.setLayout(experimentLayout);
-		eegExperiment.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
-		
-		//move buttons to parameter of experiment
-		desti = new Button("Destination Foler");
-		pictures = new Button("Picture Folder");
-		gogo = new Button("begin");
-		
-		desti.addActionListener(this);
-		pictures.addActionListener(this);
-		gogo.addActionListener(this);
-		
-		eegExperiment.add(desti);
-		eegExperiment.add(pictures);
-		eegExperiment.add(gogo);
-		
-		exp.add(eegExperiment);
-		exp.pack();
-		exp.setVisible(true);
 	}
 	
 	
