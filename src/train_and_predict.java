@@ -14,6 +14,7 @@ public class train_and_predict extends Frame implements ActionListener{
 	Button set_path;
 	Button svm_path;
 	Button train;
+	Button predict;
 	
 	public train_and_predict(){
 		training_file_path = "";
@@ -31,13 +32,16 @@ public class train_and_predict extends Frame implements ActionListener{
 		set_path = new Button("set directory path for training data");
 		svm_path = new Button("set directory path for SVM");
 		train = new Button("train");
+		predict = new Button("predict(premade)");
 		set_path.addActionListener(this);
 		svm_path.addActionListener(this);
 		train.addActionListener(this);
+		predict.addActionListener(this);
 		
 		panel.add(set_path);
 		panel.add(svm_path);
 		panel.add(train);
+		panel.add(predict);
 		
 		frame.add(panel);
 		
@@ -81,6 +85,23 @@ public class train_and_predict extends Frame implements ActionListener{
 		        System.out.println("model path should be: " + model_path);
 			}catch(IOException p){System.out.print("erororororor");}
 			}
+		}
+		
+		if (holder == predict){
+			try{
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "set classpath = \"C:\\Users;C;\\Users\\SVMjava\\libsvm.jar\" && cd \"C:\\Users\\SVMjava\" && java -classpath libsvm.jar svm_predict \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\singleExec.txt\" \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\svm_testData.txt.model\" \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\Output.txt\"");
+				builder.redirectErrorStream(true);
+				Process q = builder.start();
+				BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
+				String line;
+				while(true){
+					line = r.readLine();
+					System.out.println(line);
+					if (line == null) {break;}
+					if (line.equals("V from the prediction is: 1.0"))
+						System.out.println("got it");
+				}
+			} catch(IOException ep){System.out.println("heorororro");}
 		}
 	}
 	public String add_quotes(String p){
