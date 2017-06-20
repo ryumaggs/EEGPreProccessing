@@ -15,9 +15,15 @@ public class train_and_predict extends Frame implements ActionListener{
 	Button svm_path;
 	Button train;
 	Button predict;
+	Button openHand;
+	
+	ArduinoArm main;
 	
 	public train_and_predict(){
 		training_file_path = "";
+		main = new ArduinoArm();
+		main.initialize();
+		
 		frame = new JFrame("train and predict");
 		frame.setSize(400,200);
 		frame.setLocationRelativeTo(null);
@@ -32,16 +38,19 @@ public class train_and_predict extends Frame implements ActionListener{
 		set_path = new Button("set directory path for training data");
 		svm_path = new Button("set directory path for SVM");
 		train = new Button("train");
-		predict = new Button("predict(premade)");
+		predict = new Button("close hand");
+		openHand = new Button("open hand");
 		set_path.addActionListener(this);
 		svm_path.addActionListener(this);
 		train.addActionListener(this);
 		predict.addActionListener(this);
+		openHand.addActionListener(this);
 		
 		panel.add(set_path);
 		panel.add(svm_path);
 		panel.add(train);
 		panel.add(predict);
+		panel.add(openHand);
 		
 		frame.add(panel);
 		
@@ -87,8 +96,11 @@ public class train_and_predict extends Frame implements ActionListener{
 			}
 		}
 		
-		if (holder == predict){
+		if (holder == predict || holder == openHand){
 			try{
+				int writeMes = 0;
+				if (holder == predict)
+					writeMes = 1;
 				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "set classpath = \"C:\\Users;C;\\Users\\SVMjava\\libsvm.jar\" && cd \"C:\\Users\\SVMjava\" && java -classpath libsvm.jar svm_predict \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\singleExec.txt\" \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\svm_testData.txt.model\" \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\Output.txt\"");
 				builder.redirectErrorStream(true);
 				Process q = builder.start();
@@ -96,11 +108,27 @@ public class train_and_predict extends Frame implements ActionListener{
 				String line;
 				while(true){
 					line = r.readLine();
-					System.out.println(line);
+					//System.out.println(line);
 					if (line == null) {break;}
-					if (line.equals("V from the prediction is: 1.0"))
-						System.out.println("got it");
+					if (line.equals("V from the prediction is: 1.0") || line.equals("V from the prediction is: -1.0")){
+						//need to figure out where to call the opening of arduino channel below
+						/*Thread t=new Thread() {
+							public void run() {
+								//the following line will keep this app alive for 1000 seconds,
+								//waiting for events to occur and responding to them (printing incoming messages to console).
+								try {Thread.sleep(1000000);} catch (InterruptedException ie) {}
+							}
+						};*/
+						//t.start();
+						System.out.println("Started");
+						main.writeMessage(writeMes);
+						System.out.println("finished writing message");
+						main.output.flush();
+						main.close();
+						break;
+					}
 				}
+				r.close();
 			} catch(IOException ep){System.out.println("heorororro");}
 		}
 	}
