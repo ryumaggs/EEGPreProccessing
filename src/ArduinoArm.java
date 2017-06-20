@@ -18,11 +18,12 @@ public class ArduinoArm implements SerialPortEventListener {
 	static final int TIME_OUT = 2000;
 	/** Default bits per second for COM port. */
 	static final int DATA_RATE = 9600;
+	int recieved;
 
 	public void initialize() {
 		CommPortIdentifier portId = null;
 		Enumeration portEnum = CommPortIdentifier.getPortIdentifiers();
-
+		recieved = 0;
 		//First, Find an instance of serial port as set in PORT_NAMES.
 		while (portEnum.hasMoreElements()) {
 			portId = (CommPortIdentifier)portEnum.nextElement();
@@ -39,7 +40,9 @@ public class ArduinoArm implements SerialPortEventListener {
 			// open serial port, and use class name for the appName.
 			serialPort = (SerialPort) portId.open(this.getClass().getName(),
 					TIME_OUT);
-
+			System.out.println("initializing");
+			Thread.sleep(4000);
+			System.out.println("done!");
 			// set port parameters
 			serialPort.setSerialPortParams(DATA_RATE,
 					SerialPort.DATABITS_8,
@@ -74,8 +77,12 @@ public class ArduinoArm implements SerialPortEventListener {
 	public synchronized void serialEvent(SerialPortEvent oEvent) {
 		if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
 			try {
-				String inputLine=input.readLine();
-				System.out.println(inputLine);
+				if (recieved == 0){
+					String inputLine=input.readLine();
+					System.out.println(inputLine);
+				if (inputLine.equals("close hand") || inputLine.equals("open hand"))
+					recieved = 1;
+				}
 			} catch (Exception e) {
 				System.err.println(e.toString());
 			}
@@ -83,18 +90,31 @@ public class ArduinoArm implements SerialPortEventListener {
 		// Ignore all the other eventTypes, but you should consider the other ones.
 	}
 	
-	public void writeMessage(){
-		char test = 'v';
+	public void writeMessage(int com){
+		char close = 'v';
+		char open = 'o';
 		while(true){
+			if (recieved == 1){
+				System.out.println("arduino got the command");
+				recieved = 0;
+				break;
+			}
 			try{
-			output.write(test);
+				if (com == 1){
+					//System.out.println("writing close");
+					output.write(close);
+				}
+				if (com == 0){
+					//System.out.println("writing open");
+					output.write(open);
+				}
 			}catch(IOException e){e.printStackTrace();}
 		}
 	}
 	public static void main(String[] args) throws Exception {
 		ArduinoArm main = new ArduinoArm();
 		main.initialize();
-		Thread t=new Thread() {
+		/*Thread t=new Thread() {
 			public void run() {
 				//the following line will keep this app alive for 1000 seconds,
 				//waiting for events to occur and responding to them (printing incoming messages to console).
@@ -106,6 +126,7 @@ public class ArduinoArm implements SerialPortEventListener {
 		main.writeMessage();
 		System.out.println("finished writing message");
 		main.output.flush();
-		main.close();
+		main.close();*/
+		main.writeMessage(1);
 	}
 }
