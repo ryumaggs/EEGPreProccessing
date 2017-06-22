@@ -93,27 +93,26 @@ public class ArduinoArm implements SerialPortEventListener {
 	public void writeMessage(int com){
 		char close = 'v';
 		char open = 'o';
-		while(true){
-			if (recieved == 1){
-				System.out.println("arduino got the command");
-				recieved = 0;
-				break;
-			}
-			try{
-				if (com == 1){
-					//System.out.println("writing close");
-					output.write(close);
-				}
-				if (com == 0){
-					//System.out.println("writing open");
-					output.write(open);
-				}
-			}catch(IOException e){e.printStackTrace();}
+		if (recieved == 1){
+			System.out.println("arduino got the command");
+			recieved = 0;
 		}
+		try{
+			if (com == 1){
+				//System.out.println("writing close");
+				output.write(close);
+				output.flush();
+			}
+			if (com == 0){
+				//System.out.println("writing open");
+				output.write(open);
+				output.flush();
+			}
+		}catch(IOException e){e.printStackTrace();}
 	}
 	public static void main(String[] args) throws Exception {
-		ArduinoArm main = new ArduinoArm();
-		main.initialize();
+		//ArduinoArm main = new ArduinoArm();
+		//main.initialize();
 		/*Thread t=new Thread() {
 			public void run() {
 				//the following line will keep this app alive for 1000 seconds,
@@ -127,6 +126,6 @@ public class ArduinoArm implements SerialPortEventListener {
 		System.out.println("finished writing message");
 		main.output.flush();
 		main.close();*/
-		main.writeMessage(1);
+		//main.writeMessage(1);
 	}
 }
