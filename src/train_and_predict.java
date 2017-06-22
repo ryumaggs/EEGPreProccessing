@@ -123,7 +123,6 @@ public class train_and_predict extends Frame implements ActionListener{
 						System.out.println("Started");
 						main.writeMessage(writeMes);
 						System.out.println("finished writing message");
-						main.output.flush();
 						main.close();
 						break;
 					}
