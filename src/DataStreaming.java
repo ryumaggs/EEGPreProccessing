@@ -27,10 +27,13 @@ public class DataStreaming implements SerialPortEventListener{
 	private static final double accelscale = .002/16;
 	private static DecimalFormat format2 = new DecimalFormat(".##");
 	
+	private int linecounter;
 	private byte[] backbuffer;
 	private boolean usebackbuffer;
 	
 	public void setupconnection(String filename){
+		linecounter = 0;
+		
 		Filename = filename;
 		try{
 			filewriter = new BufferedWriter(new FileWriter(Filename));
@@ -69,7 +72,7 @@ public class DataStreaming implements SerialPortEventListener{
 					SerialPort.PARITY_NONE);
 
 			// open the streams
-			input = new BufferedInputStream(serialPort.getInputStream());
+			input = new BufferedInputStream(serialPort.getInputStream(),65536);
 			//input = new BufferedReader(new InputStreamReader(serialPort.getInputStream()));
 			output = serialPort.getOutputStream();
 			
@@ -83,7 +86,7 @@ public class DataStreaming implements SerialPortEventListener{
 		
 			output.write('b');
 			output.flush();
-			try {Thread.sleep(5000); output.write('s'); output.flush();} catch (InterruptedException ie) {}
+			try {Thread.sleep(10000); output.write('s'); output.flush();} catch (InterruptedException ie) {}
 			//try {Thread.sleep(2000);} catch (InterruptedException ie) {}
 			
 		} catch (Exception e) {
@@ -91,32 +94,48 @@ public class DataStreaming implements SerialPortEventListener{
 		}
 	}
 	
+	//Listens to serialPort for incoming signals and parse them into readable format
 	public synchronized void serialEvent(SerialPortEvent oEvent) {
-		if (oEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
 			try {
+				while(input.available() >= 33){
+				//System.out.println(input.available() + " = avail");
 				byte[] inputStrand = new byte[33];
 				int c;
+				//System.out.println("packet");
 				if(usebackbuffer){
 					c = backbuffer[0];
 				}
 				else{
 					c = input.read();
 				}
-				if(isalpha(c)){
+				//Read the first 4 lines of signal (OPENBCI header)
+				if(isalpha(c) && linecounter <4){
+					linecounter ++;
+					//System.out.println("char");
 					String inputLine= ((char) c) + linereader();
 					System.out.print(inputLine);
 					write2file(inputLine, false);
 				}
-				else if(c == '$'){
+				//Read the 5th line of signal (OPENBCI header "$$$")
+				else if(c == '$' && linecounter == 4){
+					linecounter ++;
+					//System.out.println("error");
 					input.read();
 					input.read();
 				}
 				else{
+					if(c == (byte) 0xA0){
+						inputStrand[0] = (byte) c;
+						input.read(inputStrand, 1, 32);
+						usebackbuffer = false;
+						backbuffer = null;
+					}
+					else{
 					if(usebackbuffer){
 						int bblen = backbuffer.length;
 						System.arraycopy(backbuffer, 0, inputStrand, 0, bblen);
 						inputStrand[bblen] = (byte) c;
-						if(bblen < 33){
+						if(bblen < 32){
 							input.read(inputStrand, bblen+1, 32-bblen);
 						}
 					}
@@ -124,20 +143,25 @@ public class DataStreaming implements SerialPortEventListener{
 						inputStrand[0] = (byte) c;
 						input.read(inputStrand, 1, 32);
 					}
-					//System.out.println(new String(inputStrand));
+					}
+					
+					//System.out.println(new String(inputStrand) + " Size: " + inputStrand.length);
 					if(handleconsistency(inputStrand)){
 						double[] data = sampleparser(inputStrand);
 						String sdata = data2String(data) + '\n';
 						System.out.print(sdata);
 						write2file(sdata, true);
 						}
+					else{
+						System.out.println("lost packet");
+						write2file("##################LOST PACKET###################", true);
 					}
+					}
+				}
 				} catch (Exception e) {
 				System.err.println(e.toString());
-			}  
+			}
 		}
-	// Ignore all the other eventTypes, but you should consider the other ones.
-	}
 	
 	/*
 	 * Check to see that the packet of data (33 bytes) is of consistent format (a header of 0xA0 and a footer between 0xC0-0xC6)
@@ -154,26 +178,26 @@ public class DataStreaming implements SerialPortEventListener{
 		}
 		//if the first element is not a header, then find the index of the next header and append the remainder of the array to the backbuffer
 		else{
-			if(data[0] != (byte) 0xA0){
-				for(int i= 0; i<data.length; i++){
-					if(data[i] == (byte) 0xA0){
-						headerint = i;
-						break;
-					}
-				}
-			}
-			else{
+//			if(data[0] != (byte) 0xA0){
 				for(int i= 1; i<data.length; i++){
 					if(data[i] == (byte) 0xA0){
 						headerint = i;
-						break;
-					}
-					if(data[i] >= (byte) 0xC0 && data[i] <= (byte) 0xC6){
-						headerint = i+1;
-						break;
+						//break;
 					}
 				}
-			}
+//			}
+//			else{
+//				for(int i= 1; i<data.length; i++){
+//					if(data[i] == (byte) 0xA0){
+//						headerint = i;
+//						break;
+//					}
+//					if(data[i] >= (byte) 0xC0 && data[i] <= (byte) 0xC6){
+//						headerint = i+1;
+//						break;
+//					}
+//				}
+//			}
 		}
 		if(headerint != -1 && headerint < data.length){
 			usebackbuffer = true;
@@ -187,6 +211,8 @@ public class DataStreaming implements SerialPortEventListener{
 		}
 		return false;
 	}
+	
+	
 	private boolean isalpha(int c){
 		if((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')){
 			return true;
@@ -316,20 +342,20 @@ public class DataStreaming implements SerialPortEventListener{
 	public static void main(String[] args){
 		DataStreaming teststream = new DataStreaming();
 		teststream.setupconnection("Newtester.txt");
-		Thread t=new Thread() {
-			public void run() {
-			//the following line will keep this app alive for 1000 seconds,
-			//waiting for events to occur and responding to them (printing incoming messages to console).
-			try {
-				Thread.sleep(10000);
-				//teststream.endstream();
-				System.out.println("Finished");
-			} 
-			catch (InterruptedException ie) {}
-			}
-		};
-		t.start();
-		System.out.println("Started1");
+//		Thread t=new Thread() {
+//			public void run() {
+//			//the following line will keep this app alive for 1000 seconds,
+//			//waiting for events to occur and responding to them (printing incoming messages to console).
+//			try {
+//				Thread.sleep(10000);
+//				//teststream.endstream();
+//				System.out.println("Finished");
+//			} 
+//			catch (InterruptedException ie) {}
+//			}
+//		};
+//		t.start();
+//		System.out.println("Started1");
 	}
 }
 
