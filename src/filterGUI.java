@@ -123,20 +123,20 @@ public class filterGUI extends Frame implements ActionListener{
 				System.out.println("no filepath");
 		}
 		
-		else if(holder == train_and_predict){
+		frame.setVisible(true);
+		
+		if(holder == train_and_predict){
 			frame.dispose();
 			new train_and_predict();
 		}
 		
 		else if (holder == expOne){
-			System.out.println("begining experiment");
-			String[] arg = new String[]{"123"};
-			Experiment.main(arg);
+			String[] s = {"nothing in particular"};
+			Experiment.main(s);
+			frame.dispose();
 			}
 		//frame.add(panel);
 		//frame.pack();
-		frame.setVisible(true);
-		
 	}
 	
 	
