@@ -14,14 +14,29 @@ public class Experiment implements ActionListener,Runnable{
 	private JPanel panel;
 	private JLabel label;
 	private Button begin;
+	private DataStreaming netStream;
+	private OutputStream output;
+	
+	private static Lock lock;
 	
 	public Experiment(){
 		//blank creator for menu
 	}
 	public Experiment(String photos){
+		lock = new Lock();
+		netStream = new DataStreaming();
+		System.out.println("Setting up datastream");
+		netStream.setupconnection("Newtester.txt");
+		output = netStream.getWriter();
+		//dataHolder = netStream.getArrayList();
+		System.out.println("datastream initialized");
 		try{
+		output.write('v');
+		Thread.sleep(2000);
+		output.write('b');
+		System.out.println("Stream reset and started");
 		loadImages(photos);
-		}catch(IOException e){e.printStackTrace();}
+		}catch(Exception e){e.printStackTrace();}
 		exp2 = new JFrame("Experiment");
 		exp2.setSize(1000, 1000);
 		exp2.setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -33,29 +48,39 @@ public class Experiment implements ActionListener,Runnable{
 		exp2.setVisible(true);
 	}
 	
+	public static Lock get_lock(){
+		return lock;
+	}
+	
 	public void scroll_images(){
-		//DataStreaming teststream = new DataStreaming();
-		//teststream.setupconnection("Newtester.txt");
 		int current = 0;
 		int stopped = 0;
 		label.setIcon(null);
 		try{
 		Thread.sleep(2000);
-		}catch(InterruptedException ep){ep.printStackTrace();}
+		}catch(InterruptedException e){e.printStackTrace();}
 		while(true){
-			//System.out.println("entered the experiment loop");
-			current = nextImage(current);
-			stopped++;
-			if (stopped == 10)
-				break;
 			try{
-				Thread.sleep(4000);
-			}catch(InterruptedException ep){System.out.println("erorro");}
+				label.setIcon(frames[current]);
+				Thread.sleep(2000);
+				label.setIcon(null);
+				Thread.sleep(3000);
+				lock.lock();
+				label.setIcon(frames[current]);
+				netStream.write2file("CHANGED MY IMAGE HERE BOYS", true);
+				lock.unlock();
+				Thread.sleep(3000);
+			}catch(Exception e){e.printStackTrace();}
+			current++;
+			stopped++;
+			if (stopped == 15)
+				break;
 			label.setIcon(null);
 			try{
-			Thread.sleep(2000);
-			}catch(InterruptedException ep){ep.printStackTrace();}
+				Thread.sleep(2000);
+			}catch(InterruptedException ep){System.out.println("erorro");}
 		}
+		netStream.endstream();
 	}
 	public void loadImages(String photo)throws IOException{
 		File dir = new File(photo);
@@ -68,18 +93,6 @@ public class Experiment implements ActionListener,Runnable{
 	
 	public void run(){
 		scroll_images();
-	}
-	
-	public int nextImage(int cur){
-		//System.out.println("looking at image nmber: " + cur);
-		if (cur == frames.length-1)
-			cur = 0;
-		else 
-			cur +=1;
-	
-		label.setIcon(frames[cur]);
-		return cur;
-		
 	}
 	
 	public void actionPerformed(ActionEvent e){
