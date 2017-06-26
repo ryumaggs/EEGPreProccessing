@@ -6,6 +6,7 @@ public class RawFilter {
 	private Complex[][] filteredData;
 	final String CLOSED = "CLOSED";
 	final String OPEN = "OPEN";
+	final String MARKER = "";
 	
 	/*
 	 * for each file in the directory:
@@ -55,13 +56,17 @@ public class RawFilter {
 	//Given a OpenBCI file, parse it into a 2D array of timesample by channels
 	private void parseData(File dataFile, int chan, int numsample){
 		Scanner scan;
+		String s;
 		try {
 			scan = new Scanner(dataFile);
 			for(int i=0; i <=5; i++){
 				scan.nextLine();
 			}
 			for(int idx=0; idx<numsample; idx++){
-				trialParser(scan.nextLine(), chan, idx);
+				s = scan.nextLine();
+				//adjust the comparison when actual marker is decided
+				if (!(s.equals(MARKER)))
+					trialParser(s, chan, idx);
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -95,6 +100,14 @@ public class RawFilter {
 	
 	public Complex[][] getParsedData(){
 		return parsedunfilteredData;
+	}
+	
+	public void reference_sub(){
+		
+	}
+	
+	public void zero_data(){
+		
 	}
 	
 	public static Complex[][] bandpassfilter(Complex[][] data, int samprate, int lpfreq, int hpfreq){
@@ -131,6 +144,7 @@ public class RawFilter {
 		try{
 			//go through each channel (row), and add each channel data to its respective file
 			for (int i = 0; i < filteredData.length; i++){
+				//consider adding in empty sections because that's still data.
 				if (isEmptyArray(filteredData[i])== false){
 					File file = new File(destination + "\\Channel"+i+".txt");
 					FileWriter fw = new FileWriter(file,true);
