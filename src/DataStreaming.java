@@ -1,4 +1,4 @@
-import java.io.BufferedReader;
+//import java.io.BufferedReader;
 import java.io.BufferedInputStream;
 import java.io.OutputStream;
 import gnu.io.CommPortIdentifier; 
@@ -6,7 +6,8 @@ import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent; 
 import gnu.io.SerialPortEventListener; 
 import java.util.Enumeration;
-import java.util.Scanner;
+//import java.util.Scanner;
+//import java.util.ArrayList;
 import java.text.DecimalFormat;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -20,6 +21,7 @@ public class DataStreaming implements SerialPortEventListener{
 	String portName = "COM3";
 	private String Filename;
 	private BufferedWriter filewriter;
+	private Lock lock;
 	
 	private static final int TIME_OUT = 5000;
 	private static final int baudrate = 115200;
@@ -32,6 +34,7 @@ public class DataStreaming implements SerialPortEventListener{
 	private boolean usebackbuffer;
 	
 	public void setupconnection(String filename){
+		lock = Experiment.get_lock();
 		linecounter = 0;
 		
 		Filename = filename;
@@ -43,7 +46,7 @@ public class DataStreaming implements SerialPortEventListener{
 		}
 		usebackbuffer = false;
 		
-		String portName = "COM3";
+		String portName = "COM4";
 		
 	    CommPortIdentifier portId = null;
 		Enumeration portEnum = CommPortIdentifier.getPortIdentifiers();
@@ -79,16 +82,6 @@ public class DataStreaming implements SerialPortEventListener{
 			// add event listeners
 			serialPort.addEventListener((SerialPortEventListener) this);
 			serialPort.notifyOnDataAvailable(true);
-			
-			output.write('v');
-			output.flush();
-			try {Thread.sleep(2000);} catch (InterruptedException ie) {}
-		
-			output.write('b');
-			output.flush();
-			try {Thread.sleep(10000); output.write('s'); output.flush();} catch (InterruptedException ie) {}
-			//try {Thread.sleep(2000);} catch (InterruptedException ie) {}
-			
 		} catch (Exception e) {
 			System.err.println(e.toString());
 		}
@@ -98,10 +91,8 @@ public class DataStreaming implements SerialPortEventListener{
 	public synchronized void serialEvent(SerialPortEvent oEvent) {
 			try {
 				while(input.available() >= 33){
-				//System.out.println(input.available() + " = avail");
 				byte[] inputStrand = new byte[33];
 				int c;
-				//System.out.println("packet");
 				if(usebackbuffer){
 					c = backbuffer[0];
 				}
@@ -111,15 +102,12 @@ public class DataStreaming implements SerialPortEventListener{
 				//Read the first 4 lines of signal (OPENBCI header)
 				if(isalpha(c) && linecounter <4){
 					linecounter ++;
-					//System.out.println("char");
 					String inputLine= ((char) c) + linereader();
-					System.out.print(inputLine);
 					write2file(inputLine, false);
 				}
 				//Read the 5th line of signal (OPENBCI header "$$$")
 				else if(c == '$' && linecounter == 4){
 					linecounter ++;
-					//System.out.println("error");
 					input.read();
 					input.read();
 				}
@@ -131,26 +119,25 @@ public class DataStreaming implements SerialPortEventListener{
 						backbuffer = null;
 					}
 					else{
-					if(usebackbuffer){
-						int bblen = backbuffer.length;
-						System.arraycopy(backbuffer, 0, inputStrand, 0, bblen);
-						inputStrand[bblen] = (byte) c;
-						if(bblen < 32){
-							input.read(inputStrand, bblen+1, 32-bblen);
+						if(usebackbuffer){
+							int bblen = backbuffer.length;
+							System.arraycopy(backbuffer, 0, inputStrand, 0, bblen);
+							inputStrand[bblen] = (byte) c;
+							if(bblen < 32){
+								input.read(inputStrand, bblen+1, 32-bblen);
+							}
+						}
+						else{
+							inputStrand[0] = (byte) c;
+							input.read(inputStrand, 1, 32);
 						}
 					}
-					else{
-						inputStrand[0] = (byte) c;
-						input.read(inputStrand, 1, 32);
-					}
-					}
-					
-					//System.out.println(new String(inputStrand) + " Size: " + inputStrand.length);
 					if(handleconsistency(inputStrand)){
+						
 						double[] data = sampleparser(inputStrand);
 						String sdata = data2String(data) + '\n';
-						System.out.print(sdata);
-						write2file(sdata, true);
+						lock.check_lock();
+						write2file(sdata, false);
 						}
 					else{
 						System.out.println("lost packet");
@@ -285,20 +272,22 @@ public class DataStreaming implements SerialPortEventListener{
 		return dString;
 	}
 	
-	private void write2file(String data, Boolean nline){
+	//'nline' refers to if you NEED a newline character (aka don't have one in the string)
+	public void write2file(String data, Boolean nline){
 		try{
+			//System.out.println("uncloekd from write2file");
 			filewriter.write(data);
 			if(nline == true){
 				filewriter.newLine();
 			}
 			filewriter.flush();
 		}
-		catch (IOException e){
+		catch (Exception e){
 			e.printStackTrace();
 		}
 	}
 	
-	private void endstream(){
+	public void endstream(){
 		try{ 
 			output.write('s'); 
 			output.flush();
@@ -338,10 +327,16 @@ public class DataStreaming implements SerialPortEventListener{
 	    return newInt;
 	  }
 	
+	public OutputStream getWriter(){
+		return output;
+	}
 	
 	public static void main(String[] args){
-		DataStreaming teststream = new DataStreaming();
-		teststream.setupconnection("Newtester.txt");
+//		for testing purposes only
+		
+		
+//		DataStreaming teststream = new DataStreaming();
+//		teststream.setupconnection("Newtester.txt");
 //		Thread t=new Thread() {
 //			public void run() {
 //			//the following line will keep this app alive for 1000 seconds,
