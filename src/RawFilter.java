@@ -2,11 +2,15 @@ import java.util.*;
 import java.io.*;
 
 public class RawFilter {
+	int num_trials;
 	private Complex[][] parsedunfilteredData;
 	private Complex[][] filteredData;
+	private Complex[][] transposed;
+	private Complex[][] inversed;
+	private Complex[][] compressed;
 	final String CLOSED = "CLOSED";
 	final String OPEN = "OPEN";
-	final String MARKER = "";
+	final String MARKER = "CHANGED MY IMAGE HERE BOYS";
 	
 	/*
 	 * for each file in the directory:
@@ -18,24 +22,44 @@ public class RawFilter {
 	 * write to a new data file, yes
 	 */
 	public RawFilter(String dirPath, String destination, int chan, int numsample){
-		//System.out.println(dirPath);
+		System.out.println(dirPath);
 		File folder = new File(dirPath);
+		System.out.println(folder.isDirectory());
 		File[] listOfFiles = folder.listFiles();
+		System.out.println(listOfFiles.length);
+		//parsedunfilteredData = new Complex[numsample][chan];
 		
 		for(File file : listOfFiles){
 			if (file.isFile()){
+				num_trials = 0;
 				int tp = check_type(file);
-				parsedunfilteredData = new Complex[numsample][chan];
-				filteredData = new Complex[chan][numsample];
-				parseData(file, chan, numsample);
-				Complex[][] transposed = new Complex[chan][numsample];
+				//puts non-transposed, non-filtered data into parsedunfilteredData
+				parsedunfilteredData = parseData(file, chan, numsample);
+				//filteredData = new Complex[parsedunfilteredData[0].length][parsedunfilteredData.length];
+				transposed = new Complex[parsedunfilteredData[0].length][parsedunfilteredData.length];
+				//inversed = new Complex[parsedunfilteredData[0].length][parsedunfilteredData.length];
+				System.out.println("finished parsing data");
+				//transposes the data into transposed
 				transposed = transpose(parsedunfilteredData);
-				filteredData = bandpassfilter(transposed, 250, 8, 12);
-				Complex[][] inversed = new Complex[chan][numsample];
+				System.out.println("successfully transposed");
+				//zeros each trial with data preceeding the 2nd image change
+				zero_data();
+				System.out.println("zerod out eh data");
+				//compresses the data to keep only what we want
+				compressed = compress_array(8);
+				System.out.println("compressed has: " + compressed.length + " channels");
+				System.out.println("and is comprised of: " + compressed[0].length + " samples");
+				System.out.println("compressed data: ");
+				//for (Complex[] row:compressed){
+				//	System.out.println(Arrays.toString(row));
+				//}
+				//Filters data via FFT into filteredData
+				filteredData = bandpassfilter(compressed, 256, 0, 40);
+				//Inverses back from FFT
 				inversed = inverseFFT2x2(filteredData);
-				for (int i = 0; i < transposed.length; i++){
+				/*for (int i = 0; i < transposed.length; i++){
 					System.out.println(Arrays.toString(inversed[i]));
-				}
+				}*/
 				writeToFile(destination,tp,inversed);
 			}
 		}
@@ -54,36 +78,62 @@ public class RawFilter {
 	}
 	
 	//Given a OpenBCI file, parse it into a 2D array of timesample by channels
-	private void parseData(File dataFile, int chan, int numsample){
+	private Complex[][] parseData(File dataFile, int chan, int numsample){
 		Scanner scan;
-		String s;
+		String s="";
+		int counter = 0;
+		ArrayList<Complex[]> nonTransposed = new ArrayList<Complex[]>();
+		Complex[][] array_nonTransposed;
 		try {
 			scan = new Scanner(dataFile);
 			for(int i=0; i <=5; i++){
-				scan.nextLine();
+				//scan.nextLine();
+				System.out.println(scan.nextLine());
 			}
-			for(int idx=0; idx<numsample; idx++){
+			while(scan.hasNextLine()){
 				s = scan.nextLine();
+				//System.out.println("s is: " + s);
+				//System.out.println(s);
 				//adjust the comparison when actual marker is decided
 				if (!(s.equals(MARKER)))
-					trialParser(s, chan, idx);
+					nonTransposed.add(trialParser(s, chan, counter));
+				else
+					nonTransposed.add(trialParserMark(chan,counter));
+				counter++;
 			}
+			scan.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
+		int num_row = nonTransposed.size();
+		array_nonTransposed = new Complex[num_row][nonTransposed.get(0).length];
+		for(int row = 0; row < num_row; row++){
+			array_nonTransposed[row] = nonTransposed.get(row);
+		}
+		return array_nonTransposed;
 	}
 	
 	//Parse a line of data into an array channels for a given timesample
 	//and append it to the next index in the parsedunfilteredData
-	private void trialParser(String timesample, int chan, int sampleidx){
-		String[] curData = timesample.split(", ");
+	private Complex[] trialParser(String timesample, int chan, int sampleidx){
+		//System.out.println(timesample);
+		String[] curData = timesample.split(" ");
 		Complex[] curChan = new Complex[chan];
+		//System.out.println("curChan length is: " + curData.length);
 		double curVal;
 		for(int c=0; c<chan; c++){
 			curVal = Double.parseDouble(curData[c+1]);
 			curChan[c] = new Complex(curVal, 0);
 		}
-		parsedunfilteredData[sampleidx] = curChan;
+		return curChan;
+	}
+	
+	private Complex[] trialParserMark(int chan, int sampleidx){
+		Complex[] curChan = new Complex[chan];
+		for (int i = 0; i < chan; i++){
+			curChan[i] = new Complex(123,456);
+		}
+		return curChan;
 	}
 	
 	private Complex[][] transpose(Complex[][] inputarray){
@@ -107,15 +157,79 @@ public class RawFilter {
 	}
 	
 	public void zero_data(){
+		double avg = 0.0;
+		int flag = 0;
+		int counter = 0;
+		for (int i = 0; i < transposed.length; i++){
+			for (int j = 0; j < transposed[i].length; j++){
+				if (flag == 1){
+					//System.out.println("old value was: " + transposed[i][j]);
+					transposed[i][j] = transposed[i][j].minus(new Complex(avg, 0));
+					//System.out.println("new value is: " + transposed[i][j]);
+					counter++;
+				}
+				if (transposed[i][j].equals(new Complex(123,456))){
+					//this may break if there are not 50 data points before the image change, but there should be
+					avg = average(i,j-50,j-1);
+					flag = 1;
+					num_trials+=1;
+				}
+				if(counter == 256){
+					flag = 0;
+					counter = 0;
+					avg = 0;
+				}
+			}
+		}
+	}
+	
+	private Complex[][] compress_array(int chan){
+		int flag = 0;
+		int compressed_col = 0;
+		num_trials = num_trials/8;
+		System.out.println("num trials = : " + num_trials);
+		Complex[][] compressed = new Complex[chan][num_trials*256];
+		//System.out.println(transposed.length + " asjdaisjdiajdiajs ");
+		for (int i =0; i < chan; i++){
+			for (int j = 0; j < transposed[i].length; j++){
+				if (flag == 1){
+					compressed[i][compressed_col] = transposed[i][j];
+					compressed_col +=1;
+				}
+				if (transposed[i][j].equals(new Complex(123,456))){
+					//System.out.println("flag has been triggered");
+					flag = 1;
+				}
+				if (compressed_col == (num_trials*256)){
+					//System.out.println("flag has been detriggered");
+					compressed_col = 0;
+					flag = 0;
+					break;
+				}
+			}
+		}
 		
+		return compressed;
+	}
+	
+	public double average(int row, int beg, int end){
+		double total = 0.0;
+		for (int i = beg; i < end; i++){
+			total += transposed[row][i].re();
+		}
+		return total/(end-beg);
 	}
 	
 	public static Complex[][] bandpassfilter(Complex[][] data, int samprate, int lpfreq, int hpfreq){
 		int ccount = data.length;
 		int tcount = data[0].length;
+		//System.out.println("there are: " + ccount + " channels");
+		//System.out.println("and: " + tcount + " samples");
 		Complex[][] filtereddata = new Complex[ccount][tcount];
 		for(int channel=0; channel<ccount; channel++){
+			//System.out.println("looking at channel: " + channel);
 			filtereddata[channel] = Channel.fft(data[channel]);
+			//System.out.println(Arrays.toString(filtereddata[channel]));
 		}
 		for(int channel=0; channel<ccount; channel++){
 			for(int freq=0; freq<tcount; freq++){
@@ -128,6 +242,7 @@ public class RawFilter {
 					filtereddata[channel][freq] = filtereddata[channel][freq].scale(0);
 				}
 			}
+			//System.out.println(Arrays.toString(filtereddata[channel]));
 		}
 		return filtereddata;
 	}
@@ -136,29 +251,42 @@ public class RawFilter {
 		Complex[][] ret = new Complex[filterData.length][(filterData[0].length)];
 		for (int channel1 = 0; channel1 < filterData.length; channel1++){
 			ret[channel1] = Channel.ifft(filterData[channel1]);
+			//System.out.println(Arrays.toString(ret[channel1]));
 		}
 		return ret;
 	}
 	
-	public static void writeToFile(String destination, int trial_type, Complex[][] filteredData){
+	public void writeToFile(String destination, int trial_type, Complex[][] filteredData){
 		try{
+			int sample_count = 0;
 			//go through each channel (row), and add each channel data to its respective file
-			for (int i = 0; i < filteredData.length; i++){
+			for (int i = 0; i < compressed.length; i++){
+				//System.out.println("in here asidjaidja");
 				//consider adding in empty sections because that's still data.
-				if (isEmptyArray(filteredData[i])== false){
-					File file = new File(destination + "\\Channel"+i+".txt");
-					FileWriter fw = new FileWriter(file,true);
-					BufferedWriter bw = new BufferedWriter(fw);
-					PrintWriter out = new PrintWriter(bw);
-					out.print(trial_type + " ");
-					for (int j = 0; j < filteredData[i].length; j++){
-						if (filteredData[i][j].re() != 0 && filteredData[i][j].im() != 0){
-							out.print(j+":"+filteredData[i][j].abs()+" ");
-						}
+				//if (isEmptyArray(filteredData[i])== false){
+				File file = new File(destination + "\\Channel"+i+".txt");
+				FileWriter fw = new FileWriter(file,true);
+				BufferedWriter bw = new BufferedWriter(fw);
+				PrintWriter out = new PrintWriter(bw);
+				//need to adjust the bounds possibly
+				for (int j = 0; j < compressed[i].length; j++){
+					//System.out.println("accessed second for loop");
+					if(sample_count==0){
+						out.print(trial_type + " ");
 					}
-					out.print("\n");
-					out.close();
+					if (compressed[i][j].re() == 0 && compressed[i][j].im()== 0){
+						sample_count++;
+						continue;
+					}
+					//System.out.println("compressedij is: " + compressed[i][j]);
+					out.print(sample_count+":"+compressed[i][j].abs()+" ");
+					sample_count++;
+					if (sample_count >= 256){
+						sample_count = 0;
+						out.print("\n");
+					}
 				}
+				out.close();
 			}
 		} catch (IOException e){}
 	}
@@ -172,7 +300,7 @@ public class RawFilter {
 	}
 	
 	public static void main(String[] args){
-		//RawFilter test = new RawFilter("BCItester.txt", 4, 256);
+		RawFilter test = new RawFilter("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\tester","C:\\Users\\Ryan Yu\\workspace\\ImportantFreq", 8, 1024);
 		//Complex[][] data = test.getParsedData();
 		//Complex[][] filtereddata = bandpassfilter(data, 250, 8, 12);
 		//String dirp = "C:/Users/'Ryan Yu'/Desktop/application.windows64/SavedData";
