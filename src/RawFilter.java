@@ -14,92 +14,100 @@ public class RawFilter {
 	
 	/*
 	 * for each file in the directory:
-	 * open it
-	 * transpose it
-	 * fft
-	 * filter
-	 * (convert back) yes
-	 * write to a new data file, yes
+	 * Read file
+	 * transpose it so that it is an array that is channel x data
+	 * zero-ground, and reference-ground the data
+	 * FFT and filter (0-40hz)
+	 * inverse FFT
+	 * write to a new data file
+	 * 
+	 * Citation: the Complex class and objects used throughout this code was taken from Algorithms Fourth Edition 
+	 * by Robert Sedgewick and Kevin Wayne, and found on the princeton.edu CS department website
+	 * URL: algs4.cs.princeton.edu/99scientific/Complex.java.html
 	 */
-	public RawFilter(String dirPath, String destination, int chan, int numsample){
-		System.out.println(dirPath);
+	public RawFilter(String dirPath, String destination, int chan){
 		File folder = new File(dirPath);
-		System.out.println(folder.isDirectory());
 		File[] listOfFiles = folder.listFiles();
-		System.out.println(listOfFiles.length);
-		//parsedunfilteredData = new Complex[numsample][chan];
 		
 		for(File file : listOfFiles){
 			if (file.isFile()){
 				num_trials = 0;
+				
+				//checks the type of file (+1 or -1) so that it can write that to the file
 				int tp = check_type(file);
+				
 				//puts non-transposed, non-filtered data into parsedunfilteredData
-				parsedunfilteredData = parseData(file, chan, numsample);
-				//filteredData = new Complex[parsedunfilteredData[0].length][parsedunfilteredData.length];
-				transposed = new Complex[parsedunfilteredData[0].length][parsedunfilteredData.length];
-				//inversed = new Complex[parsedunfilteredData[0].length][parsedunfilteredData.length];
+				parsedunfilteredData = parseData(file, chan);
 				System.out.println("finished parsing data");
+				
 				//transposes the data into transposed
 				transposed = transpose(parsedunfilteredData);
 				System.out.println("successfully transposed");
-				//zeros each trial with data preceeding the 2nd image change
+				
+				//zeros each trial with data precceeding the 2nd image change
 				zero_data();
-				System.out.println("zerod out eh data");
+				System.out.println("zeroed out the data");
+				
 				//compresses the data to keep only what we want
-				compressed = compress_array(8);
-				System.out.println("compressed has: " + compressed.length + " channels");
-				System.out.println("and is comprised of: " + compressed[0].length + " samples");
-				System.out.println("compressed data: ");
-				//for (Complex[] row:compressed){
-				//	System.out.println(Arrays.toString(row));
-				//}
+				compressed = compress_array(8,num_trials/8);
+				System.out.println("compressed data");
+				
 				//Filters data via FFT into filteredData
 				filteredData = bandpassfilter(compressed, 256, 0, 40);
+				System.out.println("bandpassfiltered the data");
+				
 				//Inverses back from FFT
 				inversed = inverseFFT2x2(filteredData);
-				/*for (int i = 0; i < transposed.length; i++){
-					System.out.println(Arrays.toString(inversed[i]));
-				}*/
+				System.out.println("inverse FFT'd the data");
+				
+				//write the data to file
 				writeToFile(destination,tp,inversed);
+				System.out.println("wrote to file. Done");
 			}
 		}
 	}
 	
+	/*
+	 * Checks the type of trial ran (open or close hand)
+	 * Parameter: file - the file being processed
+	 * Output: either int -1 or 1 depending on the file
+	 */
 	public int check_type(File file){
-		//System.out.print(file.getName());
 		String name = file.getName();
 		for (int i = 0; i < CLOSED.length(); i++){
 			if (!(name.substring(i,i+1).equals(CLOSED.substring(i, i+1)))){
 				return -1;
 			}
 		}
-	
 		return 1;
 	}
 	
-	//Given a OpenBCI file, parse it into a 2D array of timesample by channels
-	private Complex[][] parseData(File dataFile, int chan, int numsample){
+	/*
+	 * Given a OpenBCI file, parse it into a 2D array of timesample by channels
+	 * Parameters: dataFile - the file being processed, 
+	 * 			   chan - the number of channels in the recording
+	 * Output:     Complex[total_number_of_samples][number_of_channels]
+	 */
+	private Complex[][] parseData(File dataFile, int chan){
 		Scanner scan;
 		String s="";
-		int counter = 0;
 		ArrayList<Complex[]> nonTransposed = new ArrayList<Complex[]>();
 		Complex[][] array_nonTransposed;
 		try {
 			scan = new Scanner(dataFile);
+			//ignore the first 5 lines of data, it will be the OpenBCI headers
 			for(int i=0; i <=5; i++){
-				//scan.nextLine();
-				System.out.println(scan.nextLine());
+				scan.nextLine();
 			}
+			
+			//read the rest of file adding either data or a distinct pattern for marker data.
 			while(scan.hasNextLine()){
 				s = scan.nextLine();
-				//System.out.println("s is: " + s);
-				//System.out.println(s);
-				//adjust the comparison when actual marker is decided
+				//Note:adjust the comparison when actual marker is decided
 				if (!(s.equals(MARKER)))
-					nonTransposed.add(trialParser(s, chan, counter));
+					nonTransposed.add(trialParser(s, chan));
 				else
-					nonTransposed.add(trialParserMark(chan,counter));
-				counter++;
+					nonTransposed.add(trialParserMark(chan));
 			}
 			scan.close();
 		} catch (FileNotFoundException e) {
@@ -113,13 +121,16 @@ public class RawFilter {
 		return array_nonTransposed;
 	}
 	
-	//Parse a line of data into an array channels for a given timesample
-	//and append it to the next index in the parsedunfilteredData
-	private Complex[] trialParser(String timesample, int chan, int sampleidx){
-		//System.out.println(timesample);
+	/*
+	 * Parse a single line of the file and return a Complex[] that has split the value based on spaces
+	 * 
+	 * Parameters: timesample - the String formatted data to be parsed,
+	 * 			   chan - the number of channels in the recording
+	 * Output:     Complex[] that contains the values of the String split into seperate elements
+	 */
+	private Complex[] trialParser(String timesample, int chan){
 		String[] curData = timesample.split(" ");
 		Complex[] curChan = new Complex[chan];
-		//System.out.println("curChan length is: " + curData.length);
 		double curVal;
 		for(int c=0; c<chan; c++){
 			curVal = Double.parseDouble(curData[c+1]);
@@ -127,15 +138,26 @@ public class RawFilter {
 		}
 		return curChan;
 	}
-	
-	private Complex[] trialParserMark(int chan, int sampleidx){
+	/*
+	 * Called when the reading the file hits a marker signifying the actual experimental data
+	 * 
+	 * Parameters:  chan - the number of channels in the recording
+	 * Output:      Complex[] that contains only 123+456i (should not be able to find this pattern in the data)
+	 */
+	private Complex[] trialParserMark(int chan){
 		Complex[] curChan = new Complex[chan];
 		for (int i = 0; i < chan; i++){
 			curChan[i] = new Complex(123,456);
 		}
 		return curChan;
 	}
-	
+	/*
+	 * This function takes an array that is sample x channel, and
+	 * turns it into an array that is channel x sample
+	 * 
+	 * Parameter: inputarray - the array you want to rotate
+	 * Output:    tArray - the inputarray that has been rotated
+	 */
 	private Complex[][] transpose(Complex[][] inputarray){
 		int num_channels = inputarray[0].length;
 		int num_input = inputarray.length;
@@ -148,14 +170,18 @@ public class RawFilter {
 		return tArray;
 	}
 	
-	public Complex[][] getParsedData(){
-		return parsedunfilteredData;
-	}
-	
 	public void reference_sub(){
-		
+		//add this in later
 	}
 	
+	/*
+	 * Zero's data in correspondence with common EEG practice: take a bit of the data before the
+	 * data you want to use (experimental data), average it, and subtract it from your experimental data.
+	 * 
+	 * Parameter: N/A
+	 * Output:    does the subtraction of the transposed data in place such that 256 samples after the
+	 * 			  marker have the pre-experiment data average subtracted from them
+	 */
 	public void zero_data(){
 		double avg = 0.0;
 		int flag = 0;
@@ -163,9 +189,7 @@ public class RawFilter {
 		for (int i = 0; i < transposed.length; i++){
 			for (int j = 0; j < transposed[i].length; j++){
 				if (flag == 1){
-					//System.out.println("old value was: " + transposed[i][j]);
 					transposed[i][j] = transposed[i][j].minus(new Complex(avg, 0));
-					//System.out.println("new value is: " + transposed[i][j]);
 					counter++;
 				}
 				if (transposed[i][j].equals(new Complex(123,456))){
@@ -183,13 +207,36 @@ public class RawFilter {
 		}
 	}
 	
-	private Complex[][] compress_array(int chan){
+	/*
+	 * helper function for zero_data() that computes the average from the transposed array of a set
+	 * index range
+	 * 
+	 * Parameter: row - the row (channel) you are currently working with
+	 * 	          beg - the beginning index to start the averaging
+	 * 	          end - the ending index to end the values to be averaged
+	 * Output:    Returns the average of the values of the Transposed array on the given indexes for a channel
+	 */
+	public double average(int row, int beg, int end){
+		double total = 0.0;
+		for (int i = beg; i < end; i++){
+			total += transposed[row][i].re();
+		}
+		return total/(end-beg);
+	}
+	
+	/*
+	 * Data is constantly being streamed, but not all the data is required. Only need to train SVM
+	 * on the experimental data. This function strips the array of all information except experimental data, 
+	 * which is defined as 256 samples after the second time the image flashes
+	 * 
+	 * Parameter: chan - number of channels in the array
+	 * 			  num_trials - the number of trials in the data (each time a marker appears/8)
+	 * Output:    A 2d Complex array that only contains experimental data
+	 */
+	private Complex[][] compress_array(int chan, int num_trials){
 		int flag = 0;
 		int compressed_col = 0;
-		num_trials = num_trials/8;
-		System.out.println("num trials = : " + num_trials);
 		Complex[][] compressed = new Complex[chan][num_trials*256];
-		//System.out.println(transposed.length + " asjdaisjdiajdiajs ");
 		for (int i =0; i < chan; i++){
 			for (int j = 0; j < transposed[i].length; j++){
 				if (flag == 1){
@@ -197,11 +244,9 @@ public class RawFilter {
 					compressed_col +=1;
 				}
 				if (transposed[i][j].equals(new Complex(123,456))){
-					//System.out.println("flag has been triggered");
 					flag = 1;
 				}
 				if (compressed_col == (num_trials*256)){
-					//System.out.println("flag has been detriggered");
 					compressed_col = 0;
 					flag = 0;
 					break;
@@ -212,29 +257,30 @@ public class RawFilter {
 		return compressed;
 	}
 	
-	public double average(int row, int beg, int end){
-		double total = 0.0;
-		for (int i = beg; i < end; i++){
-			total += transposed[row][i].re();
-		}
-		return total/(end-beg);
-	}
-	
+	/*
+	 * Filters the EEG data to within any specified frequency
+	 * 
+	 * Parameters: data - the compressed experimental data
+	 * 			   samprate - the sample rate for the recording
+	 * 	 		   lpfreq - lowest frequency bound
+	 * 			   hpfreq - highest frequency bound
+	 * Output  	   Returns a frequency array that has any frequency outside the specified range
+	 * 			   scaled to 0, and any frequency within the range scaled by 2
+	 * 
+	 * Citation: the fft function was taken from Algorithms Fourth Edition by Robert Sedgewick
+	 * and Kevin Wayne, and found on the princeton.edu CS department website
+	 * URL: algs4.cs.princeton.edu/99scientific/FFT.java.html
+	 */
 	public static Complex[][] bandpassfilter(Complex[][] data, int samprate, int lpfreq, int hpfreq){
 		int ccount = data.length;
 		int tcount = data[0].length;
-		//System.out.println("there are: " + ccount + " channels");
-		//System.out.println("and: " + tcount + " samples");
 		Complex[][] filtereddata = new Complex[ccount][tcount];
 		for(int channel=0; channel<ccount; channel++){
-			//System.out.println("looking at channel: " + channel);
 			filtereddata[channel] = Channel.fft(data[channel]);
-			//System.out.println(Arrays.toString(filtereddata[channel]));
 		}
 		for(int channel=0; channel<ccount; channel++){
 			for(int freq=0; freq<tcount; freq++){
 				double curFreq = (double)freq * samprate / tcount;
-				//System.out.println("looking at frequency of : " + curFreq);
 				if(curFreq >= lpfreq && curFreq <= hpfreq){
 					filtereddata[channel][freq] = filtereddata[channel][freq].scale(2);
 				}
@@ -242,35 +288,47 @@ public class RawFilter {
 					filtereddata[channel][freq] = filtereddata[channel][freq].scale(0);
 				}
 			}
-			//System.out.println(Arrays.toString(filtereddata[channel]));
 		}
 		return filtereddata;
 	}
 	
+	/*
+	 * Computes the inverse FFT (from frequency array -> time array)
+	 * 
+	 * Parameters: filterData - the filtered experimental data
+	 * Output: 	   array converted back into time-based domain
+	 * 
+	 * Citation: the ifft function was taken from Algorithms Fourth Edition by Robert Sedgewick
+	 * and Kevin Wayne, and found on the princeton.edu CS department website
+	 * URL: algs4.cs.princeton.edu/99scientific/FFT.java.html
+	 */
 	public static Complex[][] inverseFFT2x2(Complex[][] filterData){
 		Complex[][] ret = new Complex[filterData.length][(filterData[0].length)];
 		for (int channel1 = 0; channel1 < filterData.length; channel1++){
 			ret[channel1] = Channel.ifft(filterData[channel1]);
-			//System.out.println(Arrays.toString(ret[channel1]));
 		}
 		return ret;
 	}
 	
+	/*
+	 * Writes the experimental data to a text file in the LIBSVM format. Splits the data into seperate files
+	 * for each channel (a model will be trained on each channel).
+	 * 
+	 * Parameter: destination - the file path for where the files are to be written
+	 * 	          trial_type - the type of file (open or close hand)
+	 * 	          filteredData - the actual experimental data (preprocessing finished)
+	 */
 	public void writeToFile(String destination, int trial_type, Complex[][] filteredData){
 		try{
 			int sample_count = 0;
 			//go through each channel (row), and add each channel data to its respective file
 			for (int i = 0; i < compressed.length; i++){
-				//System.out.println("in here asidjaidja");
-				//consider adding in empty sections because that's still data.
-				//if (isEmptyArray(filteredData[i])== false){
 				File file = new File(destination + "\\Channel"+i+".txt");
 				FileWriter fw = new FileWriter(file,true);
 				BufferedWriter bw = new BufferedWriter(fw);
 				PrintWriter out = new PrintWriter(bw);
 				//need to adjust the bounds possibly
 				for (int j = 0; j < compressed[i].length; j++){
-					//System.out.println("accessed second for loop");
 					if(sample_count==0){
 						out.print(trial_type + " ");
 					}
@@ -278,7 +336,6 @@ public class RawFilter {
 						sample_count++;
 						continue;
 					}
-					//System.out.println("compressedij is: " + compressed[i][j]);
 					out.print(sample_count+":"+compressed[i][j].abs()+" ");
 					sample_count++;
 					if (sample_count >= 256){
@@ -291,30 +348,8 @@ public class RawFilter {
 		} catch (IOException e){}
 	}
 	
-	public static boolean isEmptyArray(Complex[] arr){
-		for (int i = 0; i < arr.length; i++){
-			if (arr[i].re() != 0.0 && arr[i].im() != 0.0)
-				return false;
-		}
-		return true;
-	}
-	
+	//main function is for testing purposes
 	public static void main(String[] args){
-		RawFilter test = new RawFilter("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\tester","C:\\Users\\Ryan Yu\\workspace\\ImportantFreq", 8, 1024);
-		//Complex[][] data = test.getParsedData();
-		//Complex[][] filtereddata = bandpassfilter(data, 250, 8, 12);
-		//String dirp = "C:/Users/'Ryan Yu'/Desktop/application.windows64/SavedData";
-		//File asdasd = new File(dirp);
-		//if (asdasd.isDirectory()){
-			//System.out.println("dirp is a directory");
-		//}
-		//File[] listOfFiles = asdasd.listFiles();
-		//System.out.println(Arrays.toString(listOfFiles));
-		//System.out.println("got here1111");
-		//for (int i = 0; i < listOfFiles.length; i++){
-			//System.out.println("got here");
-			//System.out.println(listOfFiles[i].getName());
-		//}
-		//new RawFilter(dirp,8,16);
+		//RawFilter test = new RawFilter("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\tester","C:\\Users\\Ryan Yu\\workspace\\ImportantFreq", 8);
 	}
 }
