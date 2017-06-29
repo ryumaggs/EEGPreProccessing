@@ -53,7 +53,7 @@ public class filterGUI extends Frame implements ActionListener{
 		destination = new Button("Destination Folder");
 		train_and_predict = new Button("train and predict");
 		expOne = new Button("Run Experiment: Open Hand");
-		expTwo = new Button("Run Experiment: Two");
+		expTwo = new Button("Run Experiment: Close Hand");
 
 		rpath = new TextField("Path for directory containing all trials");
 		dpath = new TextField("Path for destination directory");
@@ -118,7 +118,7 @@ public class filterGUI extends Frame implements ActionListener{
 		}
 		else if (holder == go){
 			if (restTrialsDirPath != null)
-				new RawFilter(restTrialsDirPath,destinationPath, 8,256);
+				new RawFilter(restTrialsDirPath,destinationPath, 8);
 			else
 				System.out.println("no filepath");
 		}
