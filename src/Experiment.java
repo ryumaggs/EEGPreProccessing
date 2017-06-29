@@ -23,10 +23,11 @@ public class Experiment implements ActionListener,Runnable{
 		//blank creator for menu
 	}
 	public Experiment(String photos){
+		//System.out.print("herro");
 		lock = new Lock();
 		netStream = new DataStreaming();
 		System.out.println("Setting up datastream");
-		netStream.setupconnection("Newtester.txt");
+		netStream.setupconnection("CLOSED6.txt");
 		output = netStream.getWriter();
 		//dataHolder = netStream.getArrayList();
 		System.out.println("datastream initialized");
@@ -72,10 +73,14 @@ public class Experiment implements ActionListener,Runnable{
 				Thread.sleep(3000);
 			}catch(Exception e){e.printStackTrace();}
 			current++;
+			if(current >= frames.length)
+				current = 0;
 			stopped++;
-			if (stopped == 15)
+			if (stopped == 8){
+				label.setIcon(null);
 				break;
-			label.setIcon(null);
+			}
+				label.setIcon(null);
 			try{
 				Thread.sleep(2000);
 			}catch(InterruptedException ep){System.out.println("erorro");}
