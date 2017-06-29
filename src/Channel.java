@@ -39,10 +39,15 @@ public class Channel {
 		return diff_dist;
 	}
 	
-    // compute the FFT of x[], assuming its length is a power of 2
+    /* 
+     * compute the FFT of x[], assuming its length is a power of 2
+     * 
+	 * Citation: the fft function was taken from Algorithms Fourth Edition by Robert Sedgewick
+	 * and Kevin Wayne, and found on the princeton.edu CS department website
+	 * URL: algs4.cs.princeton.edu/99scientific/FFT.java.html
+	 */
     public static Complex[] fft(Complex[] x) {
         int n = x.length;
-
         // base case
         if (n == 1) return new Complex[] { x[0] };
 
@@ -73,7 +78,12 @@ public class Channel {
         }
         return y;
     }
-    //Computes the inverse of an fft
+    /* Computes the inverse of an fft
+     *
+     * Citation: the ifft function was taken from Algorithms Fourth Edition by Robert Sedgewick
+	 * and Kevin Wayne, and found on the princeton.edu CS department website
+	 * URL: algs4.cs.princeton.edu/99scientific/FFT.java.html 
+     */
     public static Complex[] ifft(Complex[] x) {
         int n = x.length;
         Complex[] y = new Complex[n];
@@ -99,25 +109,7 @@ public class Channel {
         return y;
     }
     
-    /* Main function is for testing purposes
     public static void main(String args[]){
-    	Complex[][] test_1 = new Complex[4][4];
-    	for (int i = 0; i < test_1.length; i++){
-    		for (int j = 0; j < test_1.length; j++){
-    			test_1[i][j] = new Complex((i+j+6),j-i+2);
-    		}
-    	}
-    	Channel fft_test = new Channel(test_1);
-    	
-    	//System.out.println(Arrays.deepToString(fft_test.freq));
-    	
-    	Complex[][] test_2 = new Complex[4][4];
-    	for (int i = 0; i < test_2.length; i++){
-    		for (int j = 0; j < test_2.length; j++){
-    			test_2[i][j] = new Complex((i+j+6),j-i+2);
-    		}
-    	}
-    	System.out.println(Arrays.toString(compareWaveLengths(fft_test.freq,test_2)));
-    	
-    }*/
+    	//for testing purposes
+    }
 }
