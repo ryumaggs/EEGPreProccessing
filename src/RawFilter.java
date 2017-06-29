@@ -34,8 +34,8 @@ public class RawFilter {
 				num_trials = 0;
 				
 				//checks the type of file (+1 or -1) so that it can write that to the file
+				System.out.println("-----------------------");
 				int tp = check_type(file);
-				
 				//puts non-transposed, non-filtered data into parsedunfilteredData
 				parsedunfilteredData = parseData(file, chan);
 				System.out.println("finished parsing data");
@@ -51,6 +51,7 @@ public class RawFilter {
 				//compresses the data to keep only what we want
 				compressed = compress_array(8,num_trials/8);
 				System.out.println("compressed data");
+				System.out.println("compressed length: " + compressed[0].length);
 				
 				//Filters data via FFT into filteredData
 				filteredData = bandpassfilter(compressed, 256, 0, 40);
@@ -74,8 +75,10 @@ public class RawFilter {
 	 */
 	public int check_type(File file){
 		String name = file.getName();
+		System.out.println(name);
 		for (int i = 0; i < CLOSED.length(); i++){
 			if (!(name.substring(i,i+1).equals(CLOSED.substring(i, i+1)))){
+				System.out.println("ASIDASID FILE IS OPEN TYPE AISJDAISD");
 				return -1;
 			}
 		}
@@ -198,7 +201,7 @@ public class RawFilter {
 					flag = 1;
 					num_trials+=1;
 				}
-				if(counter == 256){
+				if(counter == 128){
 					flag = 0;
 					counter = 0;
 					avg = 0;
@@ -236,7 +239,7 @@ public class RawFilter {
 	private Complex[][] compress_array(int chan, int num_trials){
 		int flag = 0;
 		int compressed_col = 0;
-		Complex[][] compressed = new Complex[chan][num_trials*256];
+		Complex[][] compressed = new Complex[chan][num_trials*128];
 		for (int i =0; i < chan; i++){
 			for (int j = 0; j < transposed[i].length; j++){
 				if (flag == 1){
@@ -246,7 +249,7 @@ public class RawFilter {
 				if (transposed[i][j].equals(new Complex(123,456))){
 					flag = 1;
 				}
-				if (compressed_col == (num_trials*256)){
+				if (compressed_col == (num_trials*128)){
 					compressed_col = 0;
 					flag = 0;
 					break;
@@ -338,7 +341,7 @@ public class RawFilter {
 					}
 					out.print(sample_count+":"+compressed[i][j].abs()+" ");
 					sample_count++;
-					if (sample_count >= 256){
+					if (sample_count >= 128){
 						sample_count = 0;
 						out.print("\n");
 					}
@@ -350,6 +353,6 @@ public class RawFilter {
 	
 	//main function is for testing purposes
 	public static void main(String[] args){
-		//RawFilter test = new RawFilter("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\tester","C:\\Users\\Ryan Yu\\workspace\\ImportantFreq", 8);
+		RawFilter test = new RawFilter("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\tester","C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\TempHolder", 8);
 	}
 }
