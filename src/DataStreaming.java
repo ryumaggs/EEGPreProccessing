@@ -18,7 +18,7 @@ public class DataStreaming implements SerialPortEventListener{
 	private BufferedInputStream input;
 	private OutputStream output;
 	SerialPort serialPort;
-	String portName = "COM3";
+	String portName = "COM4";
 	private String Filename;
 	private BufferedWriter filewriter;
 	private Lock lock;
@@ -141,7 +141,7 @@ public class DataStreaming implements SerialPortEventListener{
 						}
 					else{
 						System.out.println("lost packet");
-						write2file("##################LOST PACKET###################", true);
+						//write2file("##################LOST PACKET###################", true);
 					}
 					}
 				}
