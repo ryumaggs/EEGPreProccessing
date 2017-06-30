@@ -45,7 +45,7 @@ public class RawFilter {
 				transposed = transpose(parsedunfilteredData);
 				System.out.println("successfully transposed");
 				
-				//zeros each trial with data proceeding the 2nd image change
+				//zeros each trial with data preceding the 2nd image change
 				zero_data();
 				System.out.println("zeroed out the data");
 				
