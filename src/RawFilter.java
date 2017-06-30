@@ -36,6 +36,7 @@ public class RawFilter {
 				//checks the type of file (+1 or -1) so that it can write that to the file
 				System.out.println("-----------------------");
 				int tp = check_type(file);
+				
 				//puts non-transposed, non-filtered data into parsedunfilteredData
 				parsedunfilteredData = parseData(file, chan);
 				System.out.println("finished parsing data");
@@ -44,7 +45,7 @@ public class RawFilter {
 				transposed = transpose(parsedunfilteredData);
 				System.out.println("successfully transposed");
 				
-				//zeros each trial with data precceeding the 2nd image change
+				//zeros each trial with data proceeding the 2nd image change
 				zero_data();
 				System.out.println("zeroed out the data");
 				
