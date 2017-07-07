@@ -242,23 +242,23 @@ public class Profile {
 	}
 	public static void main(String args[]){
 		//double correct = 0.0;
-//		Profile bob = new Profile("bob");
-//		System.out.println(Arrays.toString(bob.weights));
-//		int[][] dat = bob.load_data();
-//		double[] sum = bob.test_weights(dat, bob.weights);
-//		double b_thresh = bob.find_threshhold(sum);
-//		bob.best_thresh = b_thresh;
-//		save_profile(bob);
-//		System.out.println("saved profile");
+		Profile bob = new Profile("bob");
+		System.out.println(Arrays.toString(bob.weights));
+		int[][] dat = bob.load_data();
+		double[] sum = bob.test_weights(dat, bob.weights);
+		double b_thresh = bob.find_threshhold(sum);
+ 		bob.best_thresh = b_thresh;
+		//save_profile(bob);
+		//System.out.println("saved profile");
 		
-//		Profile bobclone = new Profile();
-//		load_profile("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\bob.profile",bobclone);
-//		System.out.println("name of clone: " + bobclone.name);
-//		System.out.println("weights are: ");
-//		for (int i = 0; i < bobclone.weights.length; i++)
-//			System.out.print(bobclone.weights[i] + ", ");
-//		System.out.println("");
-//		System.out.println("best thresh is: " + bobclone.best_thresh);
+		/*Profile bobclone = new Profile();
+		load_profile("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\bob.profile",bobclone);
+		System.out.println("name of clone: " + bobclone.name);
+		System.out.println("weights are: ");
+		for (int i = 0; i < bobclone.weights.length; i++)
+			System.out.print(bobclone.weights[i] + ", ");
+		System.out.println("");
+		System.out.println("best thresh is: " + bobclone.best_thresh);*/
 		/*List<Instance> dset = convert_to_instance(dat);
 		bob.logistic.train(dset);
 		for(int i = 0; i < 104; i++){
