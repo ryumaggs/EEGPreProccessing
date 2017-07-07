@@ -34,11 +34,12 @@ public class DataStreaming implements SerialPortEventListener{
 	private boolean usebackbuffer;
 	
 	//Initialize connections to the ComPort and set up  Buffered Streams to read and write to OPENBCI
-	public void setupconnection(String filename){
+	public void setupconnection(String filename, String port){
 		lock = Experiment.get_lock();
 		linecounter = 0;
 		usebackbuffer = false;
-		String portName = "COM4";
+		//String portName = "COM3";
+		portName = port;
 		Filename = filename;
 		
 		try{
@@ -322,7 +323,7 @@ public class DataStreaming implements SerialPortEventListener{
 	    return newInt;
 	  }
 	
-	public OutputStream getWriter(){
+	public OutputStream getOutputWriter(){
 		return output;
 	}
 	
