@@ -46,7 +46,7 @@ public class RawFilter {
 				System.out.println("successfully transposed");
 				
 				//zeros each trial with data preceding the 2nd image change
-				zero_data();
+				zero_data(transposed);
 				System.out.println("zeroed out the data");
 				
 				//compresses the data to keep only what we want
@@ -75,11 +75,10 @@ public class RawFilter {
 	 * Output: either int -1 or 1 depending on the file
 	 */
 	public int check_type(File file){
-		String name = file.getName();
-		System.out.println(name);
+		String file_name = file.getName();
+		System.out.println(file_name);
 		for (int i = 0; i < CLOSED.length(); i++){
-			if (!(name.substring(i,i+1).equals(CLOSED.substring(i, i+1)))){
-				System.out.println("ASIDASID FILE IS OPEN TYPE AISJDAISD");
+			if (!(file_name.substring(i,i+1).equals(CLOSED.substring(i, i+1)))){
 				return -1;
 			}
 		}
@@ -132,8 +131,8 @@ public class RawFilter {
 	 * 			   chan - the number of channels in the recording
 	 * Output:     Complex[] that contains the values of the String split into seperate elements
 	 */
-	private Complex[] trialParser(String timesample, int chan){
-		String[] curData = timesample.split(" ");
+	private Complex[] trialParser(String dataLine, int chan){
+		String[] curData = dataLine.split(" ");
 		Complex[] curChan = new Complex[chan];
 		double curVal;
 		for(int c=0; c<chan; c++){
@@ -174,10 +173,6 @@ public class RawFilter {
 		return tArray;
 	}
 	
-	public void reference_sub(){
-		//add this in later
-	}
-	
 	/*
 	 * Zero's data in correspondence with common EEG practice: take a bit of the data before the
 	 * data you want to use (experimental data), average it, and subtract it from your experimental data.
@@ -186,25 +181,25 @@ public class RawFilter {
 	 * Output:    does the subtraction of the transposed data in place such that 256 samples after the
 	 * 			  marker have the pre-experiment data average subtracted from them
 	 */
-	public void zero_data(){
+	public void zero_data(Complex[][] transposed_data){
 		double avg = 0.0;
-		int flag = 0;
-		int counter = 0;
+		int marker_flag = 0;
+		int data_counter = 0;
 		for (int i = 0; i < transposed.length; i++){
-			for (int j = 0; j < transposed[i].length; j++){
-				if (flag == 1){
-					transposed[i][j] = transposed[i][j].minus(new Complex(avg, 0));
-					counter++;
+			for (int j = 0; j < transposed_data[i].length; j++){
+				if (marker_flag == 1){
+					transposed_data[i][j] = transposed_data[i][j].minus(new Complex(avg, 0));
+					data_counter++;
 				}
-				if (transposed[i][j].equals(new Complex(123,456))){
+				if (transposed_data[i][j].equals(new Complex(123,456))){
 					//this may break if there are not 50 data points before the image change, but there should be
 					avg = average(i,j-50,j-1);
-					flag = 1;
+					marker_flag = 1;
 					num_trials+=1;
 				}
-				if(counter == 128){
-					flag = 0;
-					counter = 0;
+				if(data_counter == 128){
+					marker_flag = 0;
+					data_counter = 0;
 					avg = 0;
 				}
 			}
@@ -323,6 +318,7 @@ public class RawFilter {
 	 * 	          filteredData - the actual experimental data (preprocessing finished)
 	 */
 	public void writeToFile(String destination, int trial_type, Complex[][] filteredData){
+		int temp_count = 0;
 		try{
 			int sample_count = 0;
 			//go through each channel (row), and add each channel data to its respective file
@@ -335,6 +331,7 @@ public class RawFilter {
 				for (int j = 0; j < compressed[i].length; j++){
 					if(sample_count==0){
 						out.print(trial_type + " ");
+						temp_count++;
 					}
 					if (compressed[i][j].re() == 0 && compressed[i][j].im()== 0){
 						sample_count++;
@@ -350,6 +347,8 @@ public class RawFilter {
 				out.close();
 			}
 		} catch (IOException e){}
+		
+		System.out.println("shoudl have written: " + temp_count + " number of trials");
 	}
 	
 	//main function is for testing purposes

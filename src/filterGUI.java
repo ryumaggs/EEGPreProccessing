@@ -86,14 +86,14 @@ public class filterGUI extends Frame implements ActionListener{
 	public static String getDestPath(){
 			return destinationPath;
 	}
-
+	
+	/*
+	 * Open up directory selector by pressing remTrials or Destination
+	 * Navigate to the file or directory
+	 * Press Save
+	 * And it saves the path into a String
+	 */
 	public void actionPerformed(ActionEvent e){
-		/*
-		 * Open up directory selector by pressing remTrials or Destination
-		 * Navigate to the file or directory
-		 * Press Save
-		 * And it saves the path into a String
-		 */
 		Object holder = e.getSource();
 
 		if (holder == remTrials || holder == destination){
@@ -113,14 +113,14 @@ public class filterGUI extends Frame implements ActionListener{
 				}
 			}
 			else if (result == JFileChooser.CANCEL_OPTION){
-				System.out.println("Cancel was selected");
+				//System.out.println("Cancel was selected");
 			}
 		}
 		else if (holder == go){
 			if (restTrialsDirPath != null)
 				new RawFilter(restTrialsDirPath,destinationPath, 8);
 			else
-				System.out.println("no filepath");
+				System.out.println("filepath was not entered");
 		}
 		
 		frame.setVisible(true);
