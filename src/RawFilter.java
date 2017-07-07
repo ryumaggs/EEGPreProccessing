@@ -10,7 +10,7 @@ public class RawFilter {
 	private Complex[][] compressed;
 	final String CLOSED = "CLOSED";
 	final String OPEN = "OPEN";
-	final String MARKER = "CHANGED MY IMAGE HERE BOYS";
+	final String MARKER = "MARKER";
 	
 	/*
 	 * for each file in the directory:
