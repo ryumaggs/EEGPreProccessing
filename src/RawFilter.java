@@ -8,6 +8,7 @@ public class RawFilter {
 	private Complex[][] transposed;
 	private Complex[][] inversed;
 	private Complex[][] compressed;
+	private int[][] freq_array;
 	final String CLOSED = "CLOSED";
 	final String OPEN = "OPEN";
 	final String MARKER = "MARKER";
@@ -28,6 +29,15 @@ public class RawFilter {
 	public RawFilter(String dirPath, String destination, int chan){
 		File folder = new File(dirPath);
 		File[] listOfFiles = folder.listFiles();
+		freq_array = new int[2][4];
+		freq_array[0][0] = 0;
+		freq_array[1][0] = 40;
+		freq_array[0][1] = 0;
+		freq_array[1][1] = 14;
+		freq_array[0][2] = 8;
+		freq_array[1][2] = 12;
+		freq_array[0][3] = 10;
+		freq_array[1][3] = 14;
 		
 		for(File file : listOfFiles){
 			if (file.isFile()){
@@ -54,17 +64,24 @@ public class RawFilter {
 				System.out.println("compressed data");
 				System.out.println("compressed length: " + compressed[0].length);
 				
-				//Filters data via FFT into filteredData
-				filteredData = bandpassfilter(compressed, 256, 0, 40);
-				System.out.println("bandpassfiltered the data");
+				int low_range = 0;
+				int high_range = 0;
+				for(int i = 0; i < freq_array[0].length; i++){
+					low_range = freq_array[0][i];
+					high_range = freq_array[1][i];
+					//Filters data via FFT into filteredData
+					filteredData = bandpassfilter(compressed, 256, low_range, high_range);
+					System.out.println("bandpassfiltered the data for range: " + low_range +"," + high_range);
 				
-				//Inverses back from FFT
-				inversed = inverseFFT2x2(filteredData);
-				System.out.println("inverse FFT'd the data");
+					//Inverses back from FFT
+					inversed = inverseFFT2x2(filteredData);
+					System.out.println("inverse FFT'd the data");
 				
-				//write the data to file
-				writeToFile(destination,tp,inversed);
-				System.out.println("wrote to file. Done");
+					//write the data to file
+					writeToFile(destination,tp,inversed,Integer.toString(low_range)+Integer.toString(high_range));
+					System.out.println("wrote to file. Done");
+				
+				}
 			}
 		}
 	}
@@ -106,8 +123,9 @@ public class RawFilter {
 			//read the rest of file adding either data or a distinct pattern for marker data.
 			while(scan.hasNextLine()){
 				s = scan.nextLine();
+				//System.out.println(s);
 				//Note:adjust the comparison when actual marker is decided
-				if (!(s.equals(MARKER)))
+				if (!(s.equals("CHANGED MY IMAGE HERE BOYS")))
 					nonTransposed.add(trialParser(s, chan));
 				else
 					nonTransposed.add(trialParserMark(chan));
@@ -317,13 +335,13 @@ public class RawFilter {
 	 * 	          trial_type - the type of file (open or close hand)
 	 * 	          filteredData - the actual experimental data (preprocessing finished)
 	 */
-	public void writeToFile(String destination, int trial_type, Complex[][] filteredData){
+	public void writeToFile(String destination, int trial_type, Complex[][] filteredData,String freq_range){
 		int temp_count = 0;
 		try{
 			int sample_count = 0;
 			//go through each channel (row), and add each channel data to its respective file
 			for (int i = 0; i < compressed.length; i++){
-				File file = new File(destination + "\\Channel"+i+".txt");
+				File file = new File(destination + "\\Channel"+i+"_"+freq_range+".txt");
 				FileWriter fw = new FileWriter(file,true);
 				BufferedWriter bw = new BufferedWriter(fw);
 				PrintWriter out = new PrintWriter(bw);
