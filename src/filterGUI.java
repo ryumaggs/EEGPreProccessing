@@ -29,7 +29,7 @@ public class filterGUI extends Frame implements ActionListener{
 	public filterGUI(){
 		//Set up the JFrame
 		frame = new JFrame("EEG Filter");
-		frame.setSize(480,225);
+		frame.setSize(480,200);
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
@@ -88,8 +88,6 @@ public class filterGUI extends Frame implements ActionListener{
 		constraint.gridx = 1;
 		constraint.gridy = 5;
 		innerpanel.add(runExp, constraint);
-		constraint.gridx = 1;
-		constraint.gridy = 6;
 		panel.add(innerpanel,BorderLayout.CENTER);
 		
 		frame.add(panel);

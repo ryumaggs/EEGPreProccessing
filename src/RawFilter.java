@@ -125,7 +125,7 @@ public class RawFilter {
 				s = scan.nextLine();
 				//System.out.println(s);
 				//Note:adjust the comparison when actual marker is decided
-				if (!(s.equals("CHANGED MY IMAGE HERE BOYS")))
+				if (!(s.equals(MARKER)))
 					nonTransposed.add(trialParser(s, chan));
 				else
 					nonTransposed.add(trialParserMark(chan));
