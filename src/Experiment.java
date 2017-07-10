@@ -2,8 +2,10 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.JLabel;
 
@@ -21,14 +23,14 @@ public class Experiment implements ActionListener,Runnable{
 	private JFrame buildStage;
 	private JPanel panel;
 	private JLabel label;
-	private Button begin;
+	private JButton begin;
 	private DataStreaming netStream;
 	private OutputStream output;
 	private static Lock lock;
 	
-	private TextField dirtxt;
-	private TextField destxt;
-	private TextField porttxt;
+	private JTextField dirtxt;
+	private JTextField destxt;
+	private JTextField porttxt;
 	
 	//blank constructor to instantiate the menu
 	public Experiment(){
@@ -167,18 +169,19 @@ public class Experiment implements ActionListener,Runnable{
 	//function to load an intermediate menu that will contain 'begin' button
 	public void load_menu(){
 		buildStage = new JFrame("Experiment");
-		buildStage.setSize(250,250);
+		buildStage.setSize(290,220);
+		buildStage.setLocationRelativeTo(null);
 		buildStage.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		begin = new Button("Begin");
+		begin = new JButton("Begin");
 		begin.addActionListener(this);
 		panel = new JPanel();
 		
 		JLabel dirlab = new JLabel("Path to Image Directory: ");
 		JLabel deslab = new JLabel("Filename for Output Data: ");
 		JLabel portlab = new JLabel("Portname for OPENBCI: ");
-		dirtxt = new TextField("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\src\\ExperimentPhotos\\HC",30);
-		destxt = new TextField("CLOSED.txt",30);
-		porttxt = new TextField("COM4", 5);
+		dirtxt = new JTextField("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\src\\ExperimentPhotos\\HC",20);
+		destxt = new JTextField("CLOSED.txt",20);
+		porttxt = new JTextField("COM4", 5);
 		
 		panel.add(dirlab);
 		panel.add(dirtxt);

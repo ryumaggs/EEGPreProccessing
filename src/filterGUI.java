@@ -5,90 +5,112 @@ import java.io.*;
 
 public class filterGUI extends Frame implements ActionListener{
 
-	private Button remTrials;
-	private Button go;
-	private Button destination;
-	private Button expOne;
-	private Button expTwo;
-	private Button train_and_predict;
-	//swtich these to experiment.java
-	//---------------------------
-	private Button desti;
-	private Button pictures;
-	private Button gogo;
-	private static String expPicPath;
-	private static String savePath;
-	//--------------------------
+	private JButton dataBrowser;
+	private JButton runFilter;
+	private JButton outputBrowser;
+	private JButton runOpenEXP;
+	private JButton runClosedEXP;
+	private JButton runTrainingGUI;
 	
-	private static String restTrialsDirPath; // save a directory
-	private static String destinationPath;
+	private static String datalocString; // save a directory
+	private static String outputlocString;
 	
-	private TextField rpath;
-	private TextField dpath;
+	private JTextField datalocation;
+	private JTextField outputlocation;
 
 	
 	JPanel panel;
 	JFrame frame;
+	
+	/*
+	 * Set up the JFrame which should contain:
+	 * button for the trial data selection
+	 * button for destination selection
+	 */
 	public filterGUI(){
-		/*
-		 * Set up the JFrame which should contain:
-		 * button for the trial data selection
-		 * button for destination selection
-		 */
-
-		
 		//Set up the JFrame
 		frame = new JFrame("EEG Filter");
-		frame.setSize(400,200);
+		frame.setSize(480,225);
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		//Set up the JPanel and buttons
 		panel = new JPanel();
-		FlowLayout GUILayout = new FlowLayout();
-		panel.setLayout(GUILayout);
-		GUILayout.setAlignment(FlowLayout.TRAILING);
-		go = new Button("Run Mu Filter");
-		remTrials = new Button("Remaining Trials");
-		destination = new Button("Destination Folder");
-		train_and_predict = new Button("train and predict");
-		expOne = new Button("Run Experiment: Open Hand");
-		expTwo = new Button("Run Experiment: Close Hand");
-
-		rpath = new TextField("Path for directory containing all trials");
-		dpath = new TextField("Path for destination directory");
+		JPanel innerpanel = new JPanel(new GridBagLayout());
+		GridBagConstraints constraint = new GridBagConstraints();
+		constraint.fill = GridBagConstraints.HORIZONTAL;
 		
-		go.addActionListener(this);
-		remTrials.addActionListener(this);
-		destination.addActionListener(this);
-		expOne.addActionListener(this);
-		expTwo.addActionListener(this);
-		train_and_predict.addActionListener(this);
+		runFilter = new JButton("Run Mu Filter");
+		dataBrowser = new JButton("Browse Data");
+		outputBrowser = new JButton("Browse Output");
+		runTrainingGUI = new JButton("Run Training and Prediction");
+		runOpenEXP = new JButton("Run Experiment: Open Hand");
+		runClosedEXP = new JButton("Run Experiment: Close Hand");
+
+		datalocation = new JTextField("Path for directory containing all trials", 20);
+		outputlocation = new JTextField("Path for destination directory", 20);
+		
+		runFilter.addActionListener(this);
+		dataBrowser.addActionListener(this);
+		outputBrowser.addActionListener(this);
+		runOpenEXP.addActionListener(this);
+		runClosedEXP.addActionListener(this);
+		runTrainingGUI.addActionListener(this);
 
 		//Add everything to the JFrame
-		panel.add(rpath);
-		panel.add(dpath);
-		panel.add(go);
-		panel.add(destination);
-		panel.add(remTrials);
-		panel.add(train_and_predict);
-		panel.add(expOne);
-		panel.add(expTwo);
-		panel.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
-		frame.add(panel);
+		JLabel padding = new JLabel();
+		padding.setPreferredSize(new Dimension (110,20));
+		padding.setMaximumSize(new Dimension(110,20));
+		padding.setMinimumSize(new Dimension(110,20));
+
+		constraint.gridwidth = 2;
+		constraint.gridx = 0;
+		constraint.gridy = 1;
+		innerpanel.add(datalocation, constraint);
+		constraint.gridwidth = 1;
+		constraint.gridx = 2;
+		constraint.gridy = 1;
+		innerpanel.add(dataBrowser, constraint);
+		constraint.gridwidth = 2;
+		constraint.gridx = 0;
+		constraint.gridy = 2;
+		innerpanel.add(outputlocation, constraint);
+		constraint.gridwidth = 1;
+		constraint.gridx = 2;
+		constraint.gridy = 2;
+		innerpanel.add(outputBrowser, constraint);
+		constraint.gridx = 0;
+		constraint.gridy = 3;
+		innerpanel.add(padding, constraint);
+		constraint.gridx = 1;
+		constraint.gridy = 3;
+		innerpanel.add(runFilter, constraint);
+		constraint.gridx = 1;
+		constraint.gridy = 4;
+		innerpanel.add(runTrainingGUI, constraint);
+		constraint.gridx = 1;
+		constraint.gridy = 5;
+		innerpanel.add(runOpenEXP, constraint);
+		constraint.gridx = 1;
+		constraint.gridy = 6;
+		innerpanel.add(runClosedEXP, constraint);
+		constraint.gridx = 1;
+		constraint.gridy = 7;
+		panel.add(innerpanel,BorderLayout.CENTER);
 		
+		frame.add(panel);
+
 		//Show Frame
-		//frame.pack();
 		frame.setVisible(true);
 	}
 	
 	//returns the destination path
 	public static String getDestPath(){
-			return destinationPath;
+			return outputlocString;
 	}
 	
 	/*
-	 * Open up directory selector by pressing remTrials or Destination
+	 * Open up directory selector by pressing outputBrowser or Destination
 	 * Navigate to the file or directory
 	 * Press Save
 	 * And it saves the path into a String
@@ -96,47 +118,45 @@ public class filterGUI extends Frame implements ActionListener{
 	public void actionPerformed(ActionEvent e){
 		Object holder = e.getSource();
 
-		if (holder == remTrials || holder == destination){
+		if (holder == dataBrowser || holder == outputBrowser){
 			JFileChooser chose = new JFileChooser(new File(System.getProperty("user.home") + System.getProperty("file.seperator")+"Desktop"));
 			chose.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 			int result = chose.showSaveDialog(this);
 			
 			if (result == JFileChooser.APPROVE_OPTION){
-				if (holder == remTrials){
-					rpath.setText(chose.getSelectedFile().getAbsolutePath());
-					restTrialsDirPath = rpath.getText();
-					//System.out.println(restTrialsDirPath);
+				if (holder == dataBrowser){
+					datalocation.setText(chose.getSelectedFile().getAbsolutePath());
+					datalocString = datalocation.getText();
+					//System.out.println(restTrialsDidatalocation);
 				}
-				else if (holder == destination){
-					dpath.setText(chose.getSelectedFile().getAbsolutePath());
-					destinationPath = dpath.getText();
+				else if (holder == outputBrowser){
+					outputlocation.setText(chose.getSelectedFile().getAbsolutePath());
+					outputlocString = outputlocation.getText();
 				}
 			}
 			else if (result == JFileChooser.CANCEL_OPTION){
 				//System.out.println("Cancel was selected");
 			}
 		}
-		else if (holder == go){
-			if (restTrialsDirPath != null)
-				new RawFilter(restTrialsDirPath,destinationPath, 8);
+		else if (holder == runFilter){
+			if (datalocString != null)
+				new RawFilter(datalocString,outputlocString, 8);
 			else
 				System.out.println("filepath was not entered");
 		}
 		
-		frame.setVisible(true);
+		//frame.setVisible(true);
 		
-		if(holder == train_and_predict){
-			frame.dispose();
+		if(holder == runTrainingGUI){
 			new train_and_predict();
+			frame.dispose();
 		}
 		
-		else if (holder == expOne){
+		if (holder == runOpenEXP){
 			String[] s = {"nothing in particular"};
 			Experiment.main(s);
 			frame.dispose();
 			}
-		//frame.add(panel);
-		//frame.pack();
 	}
 	
 	
