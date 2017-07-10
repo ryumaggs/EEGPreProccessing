@@ -8,8 +8,7 @@ public class filterGUI extends Frame implements ActionListener{
 	private JButton dataBrowser;
 	private JButton runFilter;
 	private JButton outputBrowser;
-	private JButton runOpenEXP;
-	private JButton runClosedEXP;
+	private JButton runExp;
 	private JButton runTrainingGUI;
 	
 	private static String datalocString; // save a directory
@@ -44,8 +43,7 @@ public class filterGUI extends Frame implements ActionListener{
 		dataBrowser = new JButton("Browse Data");
 		outputBrowser = new JButton("Browse Output");
 		runTrainingGUI = new JButton("Run Training and Prediction");
-		runOpenEXP = new JButton("Run Experiment: Open Hand");
-		runClosedEXP = new JButton("Run Experiment: Close Hand");
+		runExp = new JButton("Run Experiment");
 
 		datalocation = new JTextField("Path for directory containing all trials", 20);
 		outputlocation = new JTextField("Path for destination directory", 20);
@@ -53,8 +51,7 @@ public class filterGUI extends Frame implements ActionListener{
 		runFilter.addActionListener(this);
 		dataBrowser.addActionListener(this);
 		outputBrowser.addActionListener(this);
-		runOpenEXP.addActionListener(this);
-		runClosedEXP.addActionListener(this);
+		runExp.addActionListener(this);
 		runTrainingGUI.addActionListener(this);
 
 		//Add everything to the JFrame
@@ -90,12 +87,9 @@ public class filterGUI extends Frame implements ActionListener{
 		innerpanel.add(runTrainingGUI, constraint);
 		constraint.gridx = 1;
 		constraint.gridy = 5;
-		innerpanel.add(runOpenEXP, constraint);
+		innerpanel.add(runExp, constraint);
 		constraint.gridx = 1;
 		constraint.gridy = 6;
-		innerpanel.add(runClosedEXP, constraint);
-		constraint.gridx = 1;
-		constraint.gridy = 7;
 		panel.add(innerpanel,BorderLayout.CENTER);
 		
 		frame.add(panel);
@@ -152,7 +146,7 @@ public class filterGUI extends Frame implements ActionListener{
 			frame.dispose();
 		}
 		
-		if (holder == runOpenEXP){
+		if (holder == runExp){
 			String[] s = {"nothing in particular"};
 			Experiment.main(s);
 			frame.dispose();
