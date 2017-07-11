@@ -371,6 +371,6 @@ public class RawFilter {
 	
 	//main function is for testing purposes
 	public static void main(String[] args){
-		RawFilter test = new RawFilter("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\tester","C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\TempHolder", 8);
+		RawFilter test = new RawFilter("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\RawDataFolder","C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataHolder", 8);
 	}
 }
