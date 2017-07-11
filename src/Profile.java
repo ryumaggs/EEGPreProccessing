@@ -53,7 +53,7 @@ public class Profile {
 			for(File file: listOfFiles){
 				file_name = file.getName();
 				System.out.println("looking at: " + file_name);
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "set classpath = \"C:\\Users;C;\\Users\\SVMjava\\libsvm.jar\" && cd \"C:\\Users\\SVMjava\" && java -classpath libsvm.jar svm_train -v 10 \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder\\"+file_name+"\"");
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "cd \"C:\\Users\\SVMjava\" && java -classpath libsvm.jar svm_train -v 10 \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder\\"+file_name+"\"");
 				Process q = builder.start();
 				BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
 				rangeAccuracy[counter] = file_name;
@@ -84,7 +84,7 @@ public class Profile {
 			for(File file : listOfFiles){
 				file_name = file.getName();
 				System.out.println("looking at file: " + file_name);
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "set classpath = \"C:\\Users;C;\\Users\\SVMjava\\libsvm.jar\" && cd \"C:\\Users\\SVMjava\" && java -classpath libsvm.jar svm_train -v 10 \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder\\"+file_name+"\"");
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "cd \"C:\\Users\\SVMjava\" && java -classpath libsvm.jar svm_train -v 10 \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder\\"+file_name+"\"");
 				builder.redirectErrorStream(true);
 				Process q = builder.start();
 				BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
