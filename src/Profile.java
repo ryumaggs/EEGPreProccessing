@@ -5,14 +5,12 @@ import java.util.Arrays;
 
 public class Profile {
 	String name;
-	//LogRegression logistic;
 	double[] weights;
 	double best_thresh;
 	
 	public Profile(String name){
 		this.name = name;
-		//logistic = new LogRegression(8);
-		setWeights();
+		//setWeights();
 	}
 	
 	public Profile(){
@@ -20,6 +18,7 @@ public class Profile {
 		weights = new double[8];
 		best_thresh = 0.0;
 	}
+	
 	public static void load_profile(String filepath, Profile profile){
 		File file = new File(filepath);
 		try{
@@ -34,62 +33,45 @@ public class Profile {
 			br.close();
 		}catch(IOException e){e.printStackTrace();}
 	}
-//	public static double sigmoid(double z){
-//		return 1.0/(1.0 + Math.exp(-z));
-//	}
-//	
-//	public class LogRegression{
-//		/*
-//		 * A simple logistic regression algorithm based off of tpeng and Mattheiu Labas
-//		 */
-//		private double rate;
-//		private double[] weightz;
-//		private int ITERATIONS = 3000;
-//		
-//		public LogRegression(int n){
-//			this.rate = 0.0001;
-//			weightz = new double[n];
-//		}
-//		
-//		public void train(List<Instance> instances){
-//			for(int n = 0; n < ITERATIONS; n++){
-//				for(int i = 0; i < instances.size(); i++){
-//					int[] x =  instances.get(i).x;
-//					double predicted = classify(x);
-//					int label = instances.get(i).label;
-//					for(int j = 0; j < weightz.length; j++){
-//						weightz[j] = weightz[j] + (rate * (label - predicted) * x[j]);
-//					}
-//				}
-//			}
-//		}
-//		
-//		private double classify(int[] x){
-//			double logit = .0;
-//			for(int i = 0; i < weightz.length; i++){
-//				logit += weightz[i] * x[i];
-//			}
-//			
-//			return sigmoid(logit);
-//		}
-//	}
-//	
-//	public static class Instance{
-//		public int label;
-//		public int[] x;
-//		
-//		public Instance(int label, int[] x){
-//			this.label = label;
-//			this.x = x;
-//		}
-//	}
 	
-	public int check_header(String in){
-		for (int i =0; i < 3; i++){
-			if (in.charAt(i) != 'a')
+	public int check_header(String in, String comp){
+		for (int i =0; i < comp.length(); i++){
+			if (in.charAt(i) != comp.charAt(i))
 				return -1;
 		}
 		return 1;
+	}
+	
+	public void best_freq_range(){
+		File folder = new File("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\TempHolder");
+		File[] listOfFiles = folder.listFiles();
+		int counter = 0;
+		String[] rangeAccuracy = new String[listOfFiles.length];
+		String file_name;
+		try{
+			for(File file: listOfFiles){
+				file_name = file.getName();
+				System.out.println("looking at: " + file_name);
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "set classpath = \"C:\\Users;C;\\Users\\SVMjava\\libsvm.jar\" && cd \"C:\\Users\\SVMjava\" && java -classpath libsvm.jar svm_train -v 3 \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\TempHolder\\"+file_name+"\"");
+				Process q = builder.start();
+				BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
+				rangeAccuracy[counter] = file_name;
+				String input;
+				while (true){
+					input = r.readLine();
+					//System.out.println(input);
+					if(input!=null && check_header(input,"Cross") == 1){
+						rangeAccuracy[counter] = rangeAccuracy[counter] + " " + input;
+						System.out.println(rangeAccuracy[counter]);
+						counter++;
+						break;
+					}
+				}
+			}
+		}catch (IOException e){e.printStackTrace();}
+//		for(int i = 0; i<rangeAccuracy.length; i++){
+//			System.out.println(rangeAccuracy[i]);
+//		}
 	}
 	
 	public int[][] load_data(){
@@ -123,7 +105,7 @@ public class Profile {
 						dataHold[indexCount][counter] = 1;
 						indexCount+=1;
 					}
-					else if(check_header(input) == 1){
+					else if(check_header(input,"aaa") == 1){
 						break;
 					}
 				}
@@ -133,19 +115,6 @@ public class Profile {
 		return dataHold;
 	}
 	
-//	public static List<Instance> convert_to_instance(int[][] data){
-//		List<Instance> dataset = new ArrayList<Instance>();
-//		int label = 0;
-//		for(int i =0; i < data.length; i++){
-//			if (i < 56)
-//				label = 1;
-//			else
-//				label = 0;
-//			Instance instance = new Instance(label,data[i]);
-//			dataset.add(instance);
-//		}
-//		return dataset;
-//	}
 	public void setWeights(){
 		try{
 			File folder = new File("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\TempHolder");
@@ -158,7 +127,8 @@ public class Profile {
 			
 			for(File file : listOfFiles){
 				file_name = file.getName();
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "set classpath = \"C:\\Users;C;\\Users\\SVMjava\\libsvm.jar\" && cd \"C:\\Users\\SVMjava\" && java -classpath libsvm.jar svm_predict \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\TempHolder\\"+file_name+"\" \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\EyesAlpha\\"+file_name+".model\"");
+				System.out.println("looking at file: " + file_name);
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "set classpath = \"C:\\Users;C;\\Users\\SVMjava\\libsvm.jar\" && cd \"C:\\Users\\SVMjava\" && java -classpath libsvm.jar svm_train -v 3 \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\TempHolder\\"+file_name+"\"");
 				builder.redirectErrorStream(true);
 				Process q = builder.start();
 				BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
@@ -166,7 +136,8 @@ public class Profile {
 				while(true){
 					input = r.readLine();
 					if(input!=null){
-						if(check_header(input)==1){
+						System.out.println(input);
+						if(check_header(input,"aaa")==1){
 							correct = Double.parseDouble(r.readLine());
 							total = Double.parseDouble(r.readLine());
 							weights[counter] = (correct/total);
@@ -241,35 +212,12 @@ public class Profile {
 		return ret.toString();
 	}
 	public static void main(String args[]){
-		//double correct = 0.0;
 		Profile bob = new Profile("bob");
-		System.out.println(Arrays.toString(bob.weights));
-		int[][] dat = bob.load_data();
-		double[] sum = bob.test_weights(dat, bob.weights);
-		double b_thresh = bob.find_threshhold(sum);
- 		bob.best_thresh = b_thresh;
-		//save_profile(bob);
-		//System.out.println("saved profile");
-		
-		/*Profile bobclone = new Profile();
-		load_profile("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\bob.profile",bobclone);
-		System.out.println("name of clone: " + bobclone.name);
-		System.out.println("weights are: ");
-		for (int i = 0; i < bobclone.weights.length; i++)
-			System.out.print(bobclone.weights[i] + ", ");
-		System.out.println("");
-		System.out.println("best thresh is: " + bobclone.best_thresh);*/
-		/*List<Instance> dset = convert_to_instance(dat);
-		bob.logistic.train(dset);
-		for(int i = 0; i < 104; i++){
-			double prediction = bob.logistic.classify(dat[i]);
-			if(i < 56 && prediction>=.5){
-				correct+=1.0;
-			}
-			else if ( i > 56 && prediction < .5){
-				correct += 1.0;
-			}
-		}
-		System.out.println("logistic prediction rate: " + correct/104.0);*/
+//		System.out.println(Arrays.toString(bob.weights));
+//		int[][] dat = bob.load_data();
+//		double[] sum = bob.test_weights(dat, bob.weights);
+//		double b_thresh = bob.find_threshhold(sum);
+// 		bob.best_thresh = b_thresh;
+		bob.best_freq_range();
 	}
 }

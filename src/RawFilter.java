@@ -18,7 +18,7 @@ public class RawFilter {
 	 * Read file
 	 * transpose it so that it is an array that is channel x data
 	 * zero-ground, and reference-ground the data
-	 * FFT and filter (0-40hz)
+	 * FFT and filter
 	 * inverse FFT
 	 * write to a new data file
 	 * 
@@ -69,6 +69,7 @@ public class RawFilter {
 				for(int i = 0; i < freq_array[0].length; i++){
 					low_range = freq_array[0][i];
 					high_range = freq_array[1][i];
+					System.out.println("range: " + low_range + " -> " + high_range);
 					//Filters data via FFT into filteredData
 					filteredData = bandpassfilter(compressed, 256, low_range, high_range);
 					System.out.println("bandpassfiltered the data for range: " + low_range +"," + high_range);
@@ -78,7 +79,7 @@ public class RawFilter {
 					System.out.println("inverse FFT'd the data");
 				
 					//write the data to file
-					writeToFile(destination,tp,inversed,Integer.toString(low_range)+Integer.toString(high_range));
+					writeToFile(destination,tp,Integer.toString(low_range)+Integer.toString(high_range));
 					System.out.println("wrote to file. Done");
 				
 				}
@@ -123,12 +124,11 @@ public class RawFilter {
 			//read the rest of file adding either data or a distinct pattern for marker data.
 			while(scan.hasNextLine()){
 				s = scan.nextLine();
-				//System.out.println(s);
 				//Note:adjust the comparison when actual marker is decided
-				if (!(s.equals(MARKER)))
-					nonTransposed.add(trialParser(s, chan));
-				else
+				if (s.equals(MARKER) || s.equals("CHANGED MY IMAGE HERE BOYS"))
 					nonTransposed.add(trialParserMark(chan));
+				else
+					nonTransposed.add(trialParser(s, chan));
 			}
 			scan.close();
 		} catch (FileNotFoundException e) {
@@ -335,27 +335,27 @@ public class RawFilter {
 	 * 	          trial_type - the type of file (open or close hand)
 	 * 	          filteredData - the actual experimental data (preprocessing finished)
 	 */
-	public void writeToFile(String destination, int trial_type, Complex[][] filteredData,String freq_range){
+	public void writeToFile(String destination, int trial_type, String freq_range){
 		int temp_count = 0;
 		try{
 			int sample_count = 0;
 			//go through each channel (row), and add each channel data to its respective file
-			for (int i = 0; i < compressed.length; i++){
+			for (int i = 0; i < inversed.length; i++){
 				File file = new File(destination + "\\Channel"+i+"_"+freq_range+".txt");
 				FileWriter fw = new FileWriter(file,true);
 				BufferedWriter bw = new BufferedWriter(fw);
 				PrintWriter out = new PrintWriter(bw);
 				//need to adjust the bounds possibly
-				for (int j = 0; j < compressed[i].length; j++){
+				for (int j = 0; j < inversed[i].length; j++){
 					if(sample_count==0){
 						out.print(trial_type + " ");
 						temp_count++;
 					}
-					if (compressed[i][j].re() == 0 && compressed[i][j].im()== 0){
+					if (inversed[i][j].re() == 0 && inversed[i][j].im()== 0){
 						sample_count++;
 						continue;
 					}
-					out.print(sample_count+":"+compressed[i][j].abs()+" ");
+					out.print(sample_count+":"+inversed[i][j].abs()+" ");
 					sample_count++;
 					if (sample_count >= 128){
 						sample_count = 0;
