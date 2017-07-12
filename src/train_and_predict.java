@@ -119,7 +119,7 @@ public class train_and_predict extends Frame implements ActionListener{
 				if (holder == closeHand)
 					writeMes = 1;
 				//consider rearranging the next few lines to lower number of opening and closing of objects
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "cd \"C:\\Users\\SVMjava\" && java -classpath libsvm.jar svm_predict \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\singleExec.txt\" \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\svm_testData.txt.model\"");
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "java -classpath libsvm.jar svm_predict \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\singleExec.txt\" \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\svm_testData.txt.model\"");
 				builder.redirectErrorStream(true);
 				Process q = builder.start();
 				BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
@@ -133,7 +133,7 @@ public class train_and_predict extends Frame implements ActionListener{
 					}
 				}
 				r.close();
-			} catch(IOException ep){System.out.println("heorororro");}
+			} catch(IOException ep){ep.printStackTrace();}
 		}
 	}
 	

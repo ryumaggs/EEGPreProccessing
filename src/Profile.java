@@ -8,7 +8,8 @@ public class Profile {
 	
 	public Profile(String name){
 		this.name = name;
-		setWeights();
+		//setWeights();
+		best_thresh = 2.1;
 	}
 	
 	public Profile(){
@@ -53,7 +54,7 @@ public class Profile {
 			for(File file: listOfFiles){
 				file_name = file.getName();
 				System.out.println("looking at: " + file_name);
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "cd \"C:\\Users\\SVMjava\" && java -classpath libsvm.jar svm_train -v 10 \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder\\"+file_name+"\"");
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "java -classpath libsvm.jar svm_train -v 10 \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder\\"+file_name+"\"");
 				Process q = builder.start();
 				BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
 				rangeAccuracy[counter] = file_name;
@@ -84,7 +85,7 @@ public class Profile {
 			for(File file : listOfFiles){
 				file_name = file.getName();
 				System.out.println("looking at file: " + file_name);
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "cd \"C:\\Users\\SVMjava\" && java -classpath libsvm.jar svm_train -v 10 \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder\\"+file_name+"\"");
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "java -classpath libsvm.jar svm_train -v 10 \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder\\"+file_name+"\"");
 				builder.redirectErrorStream(true);
 				Process q = builder.start();
 				BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
@@ -131,7 +132,7 @@ public class Profile {
 	
 	public static void main(String args[]){
 		Profile bob = new Profile("bob");
-		System.out.println(Arrays.toString(bob.weights));
+		//System.out.println(Arrays.toString(bob.weights));
 		bob.best_freq_range();
 	}
 }
