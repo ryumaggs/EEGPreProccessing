@@ -1,4 +1,5 @@
 import java.io.*;
+import java.net.URL;
 import java.util.Arrays;
 
 public class Profile {
@@ -8,7 +9,7 @@ public class Profile {
 	
 	public Profile(String name){
 		this.name = name;
-		//setWeights();
+		setWeights();
 		best_thresh = 2.1;
 	}
 	
@@ -34,7 +35,7 @@ public class Profile {
 		}catch(IOException e){e.printStackTrace();}
 	}
 	
-	//header check for proccess input returns
+	//header check for process input returns
 	public int check_header(String in, String comp){
 		for (int i =0; i < comp.length(); i++){
 			if (in.charAt(i) != comp.charAt(i))
@@ -45,7 +46,8 @@ public class Profile {
 	
 	//this is not to be used in the combiner, it's a helper function for a different purpose
 	public void best_freq_range(){
-		File folder = new File("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder");
+//		File folder = new File("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder");
+		File folder = new File("D:\\javaworkspace\\EEGPreProccessing\\src\\FilteredDataFolder");
 		File[] listOfFiles = folder.listFiles();
 		int counter = 0;
 		String[] rangeAccuracy = new String[listOfFiles.length];
@@ -54,7 +56,6 @@ public class Profile {
 			for(File file: listOfFiles){
 				file_name = file.getName();
 				System.out.println("looking at: " + file_name);
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "java -classpath libsvm.jar svm_train -v 10 \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder\\"+file_name+"\"");
 				Process q = builder.start();
 				BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
 				rangeAccuracy[counter] = file_name;
@@ -73,10 +74,12 @@ public class Profile {
 		}catch (IOException e){e.printStackTrace();}
 	}
 	
-	//runs svm_train cross validation 10-fold and then assigns that accuracy to the weights array
+	//runs svm_train cross validation 10-fold for each channel separately
+	//and then assigns their accuracies to the weights array
 	public void setWeights(){
 		try{
-			File folder = new File("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder");
+			String path = Profile.class.getResource("FilteredDataFolder").getFile();
+			File folder = new File(path);
 			File[] listOfFiles = folder.listFiles();
 			weights = new double[8];
 			int counter = 0;
@@ -85,13 +88,13 @@ public class Profile {
 			for(File file : listOfFiles){
 				file_name = file.getName();
 				System.out.println("looking at file: " + file_name);
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "java -classpath libsvm.jar svm_train -v 10 \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder\\"+file_name+"\"");
 				builder.redirectErrorStream(true);
-				Process q = builder.start();
-				BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
+				Process process = builder.start();
+				BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 				String input;
 				while(true){
-					input = r.readLine();
+					//parse for (double) accuracies
+					input = reader.readLine();
 					if(input!=null){
 						if(check_header(input,"Cross")==1){
 							String[] split = input.split("\\s");
@@ -107,7 +110,7 @@ public class Profile {
 	
 	//saves the profile to a .profile file
 	public static void save_profile(Profile toSave){
-		File file = new File("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\"+toSave.name+".profile");
+		File file = new File("src/Profiles/" + toSave.name + ".profile");
 		try{
 			PrintWriter writer = new PrintWriter(file,"UTF-8");
 			writer.println(toSave.name);
@@ -118,21 +121,22 @@ public class Profile {
 	}
 	
 	//converts a double array to a string to be saved
-	public static String doubleArray_to_string(double[] dub){
-		StringBuilder ret = new StringBuilder();
-		for(int i = 0; i < dub.length; i++){
-			ret.append(dub[i]);
-			if (i != dub.length -1)
-				ret.append(", ");
+	public static String doubleArray_to_string(double[] darray){
+		StringBuilder str = new StringBuilder();
+		for(int i = 0; i < darray.length; i++){
+			str.append(darray[i]);
+			if (i != darray.length -1)
+				str.append(", ");
 			else
-				ret.append("\n");
+				str.append("\n");
 		}
-		return ret.toString();
+		return str.toString();
 	}
 	
 	public static void main(String args[]){
 		Profile bob = new Profile("bob");
 		//System.out.println(Arrays.toString(bob.weights));
 		bob.best_freq_range();
+		save_profile(bob);
 	}
 }

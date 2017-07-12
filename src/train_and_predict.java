@@ -1,5 +1,6 @@
 import java.util.*;
 import java.lang.Runtime;
+import java.net.URL;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -26,11 +27,11 @@ public class train_and_predict extends Frame implements ActionListener{
 	 * 4. closeHand: 	pre-made button that will cause hand to close via svm_predict
 	 * 5. openHand:		pre-made button that will cause hand to open via svm_predict
 	 */
-	Button set_path;
-	Button svm_path;
-	Button train;
-	Button closeHand;
-	Button openHand;
+	JButton set_path;
+	JButton svm_path;
+	JButton train;
+	JButton closeHand;
+	JButton openHand;
 	
 	//Object through which commands can be sent to Arduino
 	ArduinoArm hand;
@@ -51,11 +52,11 @@ public class train_and_predict extends Frame implements ActionListener{
 		panel.setLayout(GUILayout);
 		GUILayout.setAlignment(FlowLayout.TRAILING);
 		
-		set_path = new Button("set directory path for training data");
-		svm_path = new Button("set directory path for SVM");
-		train = new Button("train");
-		closeHand = new Button("close hand");
-		openHand = new Button("open hand");
+		set_path = new JButton("set directory path for training data");
+		svm_path = new JButton("set directory path for SVM");
+		train = new JButton("train");
+		closeHand = new JButton("close hand");
+		openHand = new JButton("open hand");
 		set_path.addActionListener(this);
 		svm_path.addActionListener(this);
 		train.addActionListener(this);
@@ -144,9 +145,10 @@ public class train_and_predict extends Frame implements ActionListener{
 		String w = "\""+p+"\"";
 		return w;
 	}
-	
 	//main function for testing purposes
 	public static void main(String[] args){
+		URL path = train_and_predict.class.getResource("BCItester.txt");
+		System.out.println(path.getFile());
 		new train_and_predict();
 	}
 }
