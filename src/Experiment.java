@@ -60,7 +60,7 @@ public class Experiment implements ActionListener,Runnable{
 			loadImages(photoDir);
 		}catch(Exception e){e.printStackTrace();}
 		
-		//set up the frame for image slideshow
+		//set up the frame for image slide show
 		buildStage = new JFrame("Experiment");
 		buildStage.setSize(1000, 1000);
 		buildStage.setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -79,37 +79,38 @@ public class Experiment implements ActionListener,Runnable{
 	}
 	
 	/*Loop function whos orders:
-	 * Blank (2 seconds)
-	 * Image(2 seconds) - prompt
-	 * Blank (3 seconds)
-	 * Image(3 seconds) - experimental
-	 * blank(2 seconds)
+	 * Blank (1 seconds)
+	 * loop:
+	 * 	Image(1 seconds) - prompt
+	 * 	Blank (1 seconds)
+	 * 	Image(1 seconds) - experimental
+	 * 	blank(2 seconds)
 	 */
 	public void scroll_images(){
 		int current = 0;
 		int stopped = 0;
 		label.setIcon(null);
 		try{
-		Thread.sleep(2000);
+		Thread.sleep(1000);
 		}catch(InterruptedException e){e.printStackTrace();}
 		while(true){
 			try{
 				label.setIcon(trialImages[current]);
-				Thread.sleep(2000);
+				Thread.sleep(1000);
 				label.setIcon(null);
-				Thread.sleep(3000);
+				Thread.sleep(1000);
 				lock.lock();
 				label.setIcon(trialImages[current]);
 				netStream.write2file("MARKER", true);
 				lock.unlock();
-				Thread.sleep(3000);
+				Thread.sleep(1000);
 			}catch(Exception e){e.printStackTrace();}
 			current++;
 			if(current >= trialImages.length)
 				current = 0;
 			stopped++;
 			label.setIcon(null);
-			if (stopped == 8){
+			if (stopped == 64){
 				break;
 			}
 			try{
@@ -117,6 +118,8 @@ public class Experiment implements ActionListener,Runnable{
 			}catch(InterruptedException ep){System.out.println("erorro");}
 		}
 		netStream.endstream();
+		System.out.print("experiment complete");
+		System.exit(1);
 	}
 	
 	/*Function to load images into an ImageIcon array
