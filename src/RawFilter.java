@@ -3,6 +3,7 @@ import java.io.*;
 
 public class RawFilter {
 	private static int num_trials;
+	private static final int NUM_TIMESTAMP = 128;
 	private Complex[][] parsedunfilteredData;
 	private Complex[][] filteredData;
 	private Complex[][] transposed;
@@ -80,11 +81,12 @@ public class RawFilter {
 				
 					//write the data to file
 					writeToFile(destination,tp,Integer.toString(low_range)+Integer.toString(high_range));
-					System.out.println("wrote to file. Done");
+					System.out.println("wrote to file");
 				
 				}
 			}
 		}
+		System.out.println("Done.");
 	}
 	
 	/*
@@ -110,11 +112,11 @@ public class RawFilter {
 	 * Output:     Complex[total_number_of_samples][number_of_channels]
 	 */
 	private Complex[][] parseData(File dataFile, int chan){
-		int first_time_flag = 0;
-		double old_line_counter = 0;
-		double line_counter = 0;
-		int second_counter = 0;
-		int num_trials = 0;
+//		int first_time_flag = 0;
+//		double old_line_counter = 0;
+//		double line_counter = 0;
+//		int second_counter = 0;
+//		int num_trials = 0;
 		Scanner scan;
 		String s="";
 		ArrayList<Complex[]> nonTransposed = new ArrayList<Complex[]>();
@@ -129,36 +131,36 @@ public class RawFilter {
 			//read the rest of file adding either data or a distinct pattern for marker data.
 			while(scan.hasNextLine()){
 				s = scan.nextLine();
-				if (s.equals(MARKER) || s.equals("CHANGED MY IMAGE HERE BOYS"))
-					continue;
-				//nonTransposed.add(trialParserMark(chan));
-				
-				old_line_counter = line_counter;
-				line_counter = returnIndex(s);
-				nonTransposed.add(trialParser(s, chan));
-				
-				if(old_line_counter > line_counter){
-					//System.out.println("old line counter: " + old_line_counter);
-					//System.out.println("line_counter: " + line_counter);
-					second_counter+=1;
-					//System.out.println("second_counter: " + second_counter);
-				}
-				if(first_time_flag == 0 && second_counter == 3){
-					//System.out.println("trial num: " + num_trials);
-					first_time_flag = 1;
-					num_trials++;
-					second_counter = 0;
+				if (s.equals(MARKER))
 					nonTransposed.add(trialParserMark(chan));
-				}
-				if (first_time_flag == 1 && second_counter == 5){
-					//System.out.println("trial num: " + num_trials);
-					nonTransposed.add(trialParserMark(chan));
-					num_trials++;
-					second_counter = 0;
-				}
-				if(num_trials >= 64){
-					break;
-				}
+				else
+					nonTransposed.add(trialParser(s,chan));
+//				old_line_counter = line_counter;
+//				line_counter = returnIndex(s);
+//				nonTransposed.add(trialParser(s, chan));
+//				
+//				if(old_line_counter > line_counter){
+//					//System.out.println("old line counter: " + old_line_counter);
+//					//System.out.println("line_counter: " + line_counter);
+//					second_counter+=1;
+//					//System.out.println("second_counter: " + second_counter);
+//				}
+//				if(first_time_flag == 0 && second_counter == 3){
+//					//System.out.println("trial num: " + num_trials);
+//					first_time_flag = 1;
+//					num_trials++;
+//					second_counter = 0;
+//					nonTransposed.add(trialParserMark(chan));
+//				}
+//				if (first_time_flag == 1 && second_counter == 5){
+//					//System.out.println("trial num: " + num_trials);
+//					nonTransposed.add(trialParserMark(chan));
+//					num_trials++;
+//					second_counter = 0;
+//				}
+//				if(num_trials >= 64){
+//					break;
+//				}
 			}
 			//System.out.println("num trials: " + num_trials);
 			scan.close();
@@ -223,6 +225,7 @@ public class RawFilter {
 			for(int row=0; row<num_input; row++){ 
 				tArray[coll][row] = inputarray[row][coll]; 
 			}
+			//System.out.println(Arrays.toString(tArray[coll]));
 		}
 		return tArray;
 	}
@@ -251,7 +254,7 @@ public class RawFilter {
 					marker_flag = 1;
 					num_trials+=1;
 				}
-				if(data_counter == 128){
+				if(data_counter == NUM_TIMESTAMP){
 					marker_flag = 0;
 					data_counter = 0;
 					avg = 0;
@@ -288,21 +291,36 @@ public class RawFilter {
 	 */
 	private Complex[][] compress_array(int chan, int num_trials){
 		int flag = 0;
-		int compressed_col = 0;
-		Complex[][] compressed = new Complex[chan][num_trials*128];
+		int compressed_col_count = 0;
+		int total_added_count = 0;
+		int trial_count = 0;
+		Complex marker = new Complex(123,456);
+		System.out.println("transposed length: " + transposed[0].length);
+		Complex[][] compressed = new Complex[chan][num_trials*NUM_TIMESTAMP];
+		System.out.println("compressed length: " + compressed[0].length);
 		for (int i =0; i < chan; i++){
+			trial_count = 0;
 			for (int j = 0; j < transposed[i].length; j++){
-				if (flag == 1){
-					compressed[i][compressed_col] = transposed[i][j];
-					compressed_col +=1;
-				}
-				if (transposed[i][j].equals(new Complex(123,456))){
-					flag = 1;
-				}
-				if (compressed_col == (num_trials*128)){
-					compressed_col = 0;
-					flag = 0;
+				if(total_added_count == compressed[i].length){
+					compressed_col_count = 0;
+					total_added_count = 0;
 					break;
+				}
+				//if you have already hit a marker and are within 0 < x < 128, add it to the compressed
+				if (flag == 1){
+					compressed[i][compressed_col_count] = transposed[i][j];
+					//System.out.println("set " + i + "," + compressed_col_count + " to: " + transposed[i][j]);
+					compressed_col_count +=1;
+					total_added_count +=1;
+				}
+				//if you hit x == 128, which reset and unset the flag
+				if (compressed_col_count == NUM_TIMESTAMP){
+					flag = 0;
+				}
+				//if you hit a flag, set flag == 1
+				if (flag == 0 && transposed[i][j].equals(marker)){
+					flag = 1;
+					trial_count++;
 				}
 			}
 		}
@@ -328,20 +346,17 @@ public class RawFilter {
 		int ccount = data.length;
 		int tcount = data[0].length;
 		int poscount = 0;
-		Complex[] sub_filtereddata = new Complex[128];
-		Complex[] fft_sub_filtereddata = new Complex[128];
+		Complex[] sub_filtereddata = new Complex[NUM_TIMESTAMP];
+		Complex[] fft_sub_filtereddata = new Complex[NUM_TIMESTAMP];
 		Complex[][] filtereddata = new Complex[ccount][tcount];
 		for(int channel = 0; channel < ccount; channel++){
-			//System.out.println("channel: " + channel);
 			for(int trial = 0; trial < num_trials/8; trial++){
-				//System.out.println("trial: " + trial);
-				for (int index = 0; index < 128; index++){
-					//System.out.println("index: " + index + " and data index: " + 128*trial+index);
-					sub_filtereddata[index] = data[channel][128*trial + index];
+				for (int index = 0; index < NUM_TIMESTAMP; index++){
+					sub_filtereddata[index] = data[channel][NUM_TIMESTAMP*trial + index];
 				}
 				fft_sub_filtereddata = Channel.fft(sub_filtereddata);
-				for(int freq=0; freq<128; freq++){
-					double curFreq = (double)freq * samprate / 128;
+				for(int freq=0; freq<NUM_TIMESTAMP; freq++){
+					double curFreq = (double)freq * samprate / NUM_TIMESTAMP;
 					if(curFreq >= lpfreq && curFreq <= hpfreq){
 						fft_sub_filtereddata[freq] = fft_sub_filtereddata[freq].scale(2);
 					}
@@ -350,7 +365,7 @@ public class RawFilter {
 					}
 				}
 				//System.out.println(Arrays.toString(fft_sub_filtereddata));
-				for(int index1 = 0; index1 < 128; index1++){
+				for(int index1 = 0; index1 < NUM_TIMESTAMP; index1++){
 					filtereddata[channel][poscount] = fft_sub_filtereddata[index1];
 					poscount++;
 				}
@@ -372,17 +387,17 @@ public class RawFilter {
 	 */
 	public static Complex[][] inverseFFT2x2(Complex[][] filterData){
 		Complex[][] ret = new Complex[filterData.length][(filterData[0].length)];
-		Complex[] sub_ret = new Complex[128];
-		Complex[] ifft_sub_ret = new Complex[128];
+		Complex[] sub_ret = new Complex[NUM_TIMESTAMP];
+		Complex[] ifft_sub_ret = new Complex[NUM_TIMESTAMP];
 		int poscounter = 0;
 		for (int channel1 = 0; channel1 < filterData.length; channel1++){
 			for(int trialnum = 0; trialnum< num_trials/8; trialnum++){
-				for(int index = 0; index < 128; index++){
-					sub_ret[index] = filterData[channel1][trialnum*128+index];
+				for(int index = 0; index < NUM_TIMESTAMP; index++){
+					sub_ret[index] = filterData[channel1][trialnum*NUM_TIMESTAMP+index];
 				}
 				//System.out.println(Arrays.toString(sub_ret));
 				ifft_sub_ret = Channel.ifft(sub_ret);
-				for(int index1 = 0; index1 < 128; index1++){
+				for(int index1 = 0; index1 < NUM_TIMESTAMP; index1++){
 					ret[channel1][poscounter] = ifft_sub_ret[index1];
 					poscounter++;
 				}
@@ -410,32 +425,34 @@ public class RawFilter {
 				FileWriter fw = new FileWriter(file,true);
 				BufferedWriter bw = new BufferedWriter(fw);
 				PrintWriter out = new PrintWriter(bw);
-				//need to adjust the bounds possibly
+				sample_count = 0;
 				for (int j = 0; j < inversed[i].length; j++){
+					if (sample_count >= NUM_TIMESTAMP){
+						sample_count = 0;
+						out.print("\n");
+					}
 					if(sample_count==0){
 						out.print(trial_type + " ");
 						temp_count++;
 					}
 					if (inversed[i][j].re() == 0 && inversed[i][j].im()== 0){
+						//System.out.println("hit a blank at: " + sample_count);
 						sample_count++;
 						continue;
 					}
 					out.print(sample_count+":"+inversed[i][j].abs()+" ");
 					sample_count++;
-					if (sample_count >= 128){
-						sample_count = 0;
-						out.print("\n");
-					}
 				}
+				out.print("\n");
 				out.close();
 			}
 		} catch (IOException e){}
 		
-		System.out.println("shoudl have written: " + temp_count + " number of trials");
+		//System.out.println("shoudl have written: " + temp_count/8 + " number of trials");
 	}
 	
 	//main function is for testing purposes
 	public static void main(String[] args){
-		RawFilter test = new RawFilter("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\RawDataFolder","C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder", 8);
+		RawFilter test = new RawFilter("src/RawDataFolder","src/FilteredDataFolder", 8);
 	}
 }
