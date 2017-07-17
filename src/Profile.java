@@ -9,7 +9,8 @@ public class Profile {
 	
 	public Profile(String name){
 		this.name = name;
-		setWeights();
+		weights = new double[8];
+		createProfile(name);
 		best_thresh = 2.1;
 	}
 	
@@ -44,70 +45,78 @@ public class Profile {
 		return 1;
 	}
 	
-	//this is not to be used in the combiner, it's a helper function for a different purpose
-	public void best_freq_range(){
-//		File folder = new File("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\FilteredDataFolder");
-		File folder = new File("D:\\javaworkspace\\EEGPreProccessing\\src\\FilteredDataFolder");
+	//runs svm_train cross validation 10-fold for each channel separately
+	//and then assigns their accuracies to the weights array	
+	public void createProfile(String foldername){
+		String path = "src/FilteredDataFolder/" + foldername;
+		File folder = new File(path);
 		File[] listOfFiles = folder.listFiles();
-		int counter = 0;
-		String[] rangeAccuracy = new String[listOfFiles.length];
+		double[] bestAccuracy = new double[8];
+		int accCount = -1;
+		String prevChannel = "";
+		String curChannel;
+		File[] bestFiles = new File[8];
+		
 		String file_name;
 		try{
 			for(File file: listOfFiles){
-				file_name = file.getName();
-				System.out.println("looking at: " + file_name);
-				Process q = builder.start();
-				BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
-				rangeAccuracy[counter] = file_name;
-				String input;
-				while (true){
-					input = r.readLine();
-					//System.out.println(input);
-					if(input!=null && check_header(input,"Cross") == 1){
-						rangeAccuracy[counter] = rangeAccuracy[counter] + " " + input;
-						System.out.println(rangeAccuracy[counter]);
-						counter++;
-						break;
+				if(!file.isDirectory()){
+					file_name = file.getName();
+					curChannel = file_name.split("_")[0];
+					System.out.println("looking at: " + file_name);
+					ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "java -classpath libsvm.jar svm_train -v 10 " + path + "\\"+file_name+"\"");
+					Process process = builder.start();
+					BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+					String line;
+					while (true){
+						line = reader.readLine();
+						if(line!=null && check_header(line,"Cross") == 1){
+							double curAccuracy = Double.parseDouble(line.split(" ")[4].split("%")[0]);
+							if(curChannel.equals(prevChannel)){
+								if(curAccuracy > bestAccuracy[accCount]){
+									bestAccuracy[accCount] = curAccuracy;
+									bestFiles[accCount] = file;
+								}
+							}
+							else{
+								prevChannel = curChannel;
+								accCount++;
+								bestAccuracy[accCount] = curAccuracy;
+								bestFiles[accCount] = file;
+							}
+							break;
+						}	
 					}
 				}
 			}
+				System.arraycopy(bestAccuracy, 0, weights, 0, bestAccuracy.length);
+				createBestFreqDir(path, bestFiles);
 		}catch (IOException e){e.printStackTrace();}
 	}
 	
-	//runs svm_train cross validation 10-fold for each channel separately
-	//and then assigns their accuracies to the weights array
-	public void setWeights(){
+	private void createBestFreqDir(String des, File[] files){
+		File bestFreqDir = new File(des + "/Best Frequency Set");
+		bestFreqDir.mkdir();
+		File cpyFile;
+		InputStream source = null;
+		OutputStream output = null;
 		try{
-			String path = Profile.class.getResource("FilteredDataFolder").getFile();
-			File folder = new File(path);
-			File[] listOfFiles = folder.listFiles();
-			weights = new double[8];
-			int counter = 0;
-			String file_name;
-			
-			for(File file : listOfFiles){
-				file_name = file.getName();
-				System.out.println("looking at file: " + file_name);
-				builder.redirectErrorStream(true);
-				Process process = builder.start();
-				BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-				String input;
-				while(true){
-					//parse for (double) accuracies
-					input = reader.readLine();
-					if(input!=null){
-						if(check_header(input,"Cross")==1){
-							String[] split = input.split("\\s");
-							weights[counter] = Double.parseDouble(split[4].substring(0, 7));
-							counter++;
-							break;
-						}
-					}
+			for(File file: files){
+				cpyFile = new File(bestFreqDir + "/" + file.getName());
+				source = new FileInputStream(file);
+				output = new FileOutputStream(cpyFile);
+				byte[] buffer = new byte[1024];
+				int bytes;
+				while((bytes = source.read(buffer))> 0){
+					output.write(buffer,0,bytes);
 				}
+				source.close();
+				output.close();
 			}
-		}catch(IOException e){e.printStackTrace();}
+		}catch (IOException e){
+			e.printStackTrace();
+		}
 	}
-	
 	//saves the profile to a .profile file
 	public static void save_profile(Profile toSave){
 		File file = new File("src/Profiles/" + toSave.name + ".profile");
@@ -133,10 +142,23 @@ public class Profile {
 		return str.toString();
 	}
 	
+	public int makeDecision(int[] modelDecisions){
+		double weightedAverage = 0;
+		for(int idx=0; idx < modelDecisions.length; idx++){
+			weightedAverage += modelDecisions[idx]*weights[idx];
+		}
+		if(weightedAverage >= best_thresh){
+			return 1;
+		}
+		else{
+			return 0;
+		}
+	}
+	
 	public static void main(String args[]){
-		Profile bob = new Profile("bob");
+		Profile bob = new Profile("Bob");
 		//System.out.println(Arrays.toString(bob.weights));
-		bob.best_freq_range();
 		save_profile(bob);
+		System.out.println("Successful Execution");
 	}
 }

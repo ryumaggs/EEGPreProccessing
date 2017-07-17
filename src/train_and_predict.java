@@ -12,100 +12,152 @@ public class train_and_predict extends Frame implements ActionListener{
 	JPanel panel;
 	
 	/*
-	 * String files that will contain file paths:
-	 * 1. training_file_path:DIRECTORY path for all of the training data
-	 * 2. svm_dir_path:      DIRECTORY path for the support vector machine (libsvm)
-	 */
-	String training_file_path;
-	String svm_dir_path;
-	
-	/*
 	 * Buttons for GUI:
 	 * 1. set_path: 	Button that will allow user to select directory containing training data
 	 * 2. svm_path: 	Button that allows user to set directory path for the SVM
-	 * 3. train: 		once 1 and 2 have been set, will create a seperate proccess to run the svm training
+	 * 3. train: 		once 1 and 2 have been set, will create a separate process to run the svm training
 	 * 4. closeHand: 	pre-made button that will cause hand to close via svm_predict
 	 * 5. openHand:		pre-made button that will cause hand to open via svm_predict
 	 */
-	JButton set_path;
+	JButton set_data;
 	JButton svm_path;
+	JButton set_model;
+	JButton set_sample;
 	JButton train;
 	JButton closeHand;
 	JButton openHand;
+	JButton runHand;
+	JTextField dataPath;
+	JTextField modelPath;
+	JTextField samplePath;
+	
+	boolean dataIsSet;
+	boolean modelIsSet;
+	boolean sampleIsSet;
 	
 	//Object through which commands can be sent to Arduino
 	ArduinoArm hand;
 	
 	public train_and_predict(){
-		training_file_path = "";
+		dataIsSet = false;
+		modelIsSet = false;
+		sampleIsSet = false;
 		//hand = new ArduinoArm();
 		//hand.initialize();
-		
+		createGui();
+	}
+	
+	private void createGui(){
 		frame = new JFrame("train and predict");
-		frame.setSize(400,200);
+		frame.setSize(440,220);
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		//Set up the JPanel and buttons
-		panel = new JPanel();
-		FlowLayout GUILayout = new FlowLayout();
-		panel.setLayout(GUILayout);
-		GUILayout.setAlignment(FlowLayout.TRAILING);
+		panel = new JPanel(new GridBagLayout());
+		GridBagConstraints constraint = new GridBagConstraints();
+		constraint.fill = GridBagConstraints.HORIZONTAL;
 		
-		set_path = new JButton("set directory path for training data");
-		svm_path = new JButton("set directory path for SVM");
-		train = new JButton("train");
+		set_data = new JButton("Browse Data");
+		dataPath = new JTextField("Training Data Directory Path",20);
+		train = new JButton("Train");
+		set_model = new JButton("Browse Model");
+		modelPath = new JTextField("Model Directory Path",20);
+		set_sample = new JButton("Browse Sample");
+		samplePath = new JTextField("Testing Sample File Path", 20);
+		runHand = new JButton("Move Hand");
 		closeHand = new JButton("close hand");
 		openHand = new JButton("open hand");
-		set_path.addActionListener(this);
-		svm_path.addActionListener(this);
+		set_data.addActionListener(this);
 		train.addActionListener(this);
+		set_model.addActionListener(this);
+		set_sample.addActionListener(this);
+		runHand.addActionListener(this);
 		closeHand.addActionListener(this);
 		openHand.addActionListener(this);
 		
-		panel.add(set_path);
-		panel.add(svm_path);
-		panel.add(train);
-		panel.add(closeHand);
-		panel.add(openHand);
+		JLabel padding = new JLabel();
+		padding.setPreferredSize(new Dimension (110,20));
+		padding.setMaximumSize(new Dimension(110,20));
+		padding.setMinimumSize(new Dimension(110,20));
+		
+		constraint.gridwidth = 2;
+		constraint.gridx = 0;
+		constraint.gridy = 0;
+		panel.add(dataPath, constraint);
+		constraint.gridwidth = 1;
+		constraint.gridx = 2;
+		constraint.gridy = 0;
+		panel.add(set_data, constraint);
+		constraint.gridx = 0;
+		constraint.gridy = 1;
+		panel.add(padding, constraint);
+		constraint.gridx = 1;
+		constraint.gridy = 1;
+		panel.add(train, constraint);
+		constraint.gridwidth = 2;
+		constraint.gridx = 0;
+		constraint.gridy = 2;
+		panel.add(modelPath, constraint);
+		constraint.gridwidth = 1;
+		constraint.gridx = 2;
+		constraint.gridy = 2;
+		panel.add(set_model, constraint);
+		constraint.gridwidth = 2;
+		constraint.gridx = 0;
+		constraint.gridy = 3;
+		panel.add(samplePath, constraint);
+		constraint.gridwidth = 1;
+		constraint.gridx = 2;
+		constraint.gridy = 3;
+		panel.add(set_sample, constraint);
+		constraint.gridx = 1;
+		constraint.gridy = 4;
+		panel.add(runHand, constraint);
 		
 		frame.add(panel);
 		
 		frame.setVisible(true);
-		
 	}
 	
 	public void actionPerformed(ActionEvent e){
 		Object holder = e.getSource();
 		
 		//opens file choosers to save directory paths
-		if (holder == set_path || holder == svm_path){
+		if (holder == set_data || holder == set_model || holder == set_sample){
 			JFileChooser chose = new JFileChooser(new File(System.getProperty("user.home") + System.getProperty("file.seperator")+"Desktop"));
 			chose.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 			int result = chose.showSaveDialog(this);
 			
 			if (result == JFileChooser.APPROVE_OPTION){
-				if (holder == set_path){
-					training_file_path = chose.getSelectedFile().getAbsolutePath();
+				if(holder == set_data){
+					dataPath.setText(chose.getSelectedFile().getAbsolutePath());
+					dataIsSet = true;
 				}
-				else if (holder == svm_path)
-					svm_dir_path = add_quotes(chose.getSelectedFile().getAbsolutePath());
+				else if(holder == set_model){
+					modelPath.setText(chose.getSelectedFile().getAbsolutePath());
+					modelIsSet = true;
+				}
+				else{
+					samplePath.setText(chose.getSelectedFile().getAbsolutePath());
+					sampleIsSet = true;
+				}
 			}
 		}
 		
 		//calls new process to run svm_train
 		if (holder == train){
-			if (svm_path.equals("") || set_path.equals(""))
-				System.out.print("error: paths are not both set");
+			if (!dataIsSet)
+				System.out.println("error: Training Data Directory Path is not set");
 			else{
-				System.out.println("started training proccess...\n");
-				File dir = new File(training_file_path);
+				System.out.println("started training proccess...");
+				File dir = new File(dataPath.getText());
 				File[] channels = dir.listFiles();
 				try{
 					for(File file : channels){
-						ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "cd "+svm_dir_path+" && java -classpath libsvm.jar svm_train -t 0 " + add_quotes(file.getAbsolutePath()));
+						ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "java -classpath libsvm.jar svm_train " + add_quotes(file.getAbsolutePath()));
 						builder.redirectErrorStream(true);
-						Process p = builder.start();
+						Process process = builder.start();
 						System.out.println("finished training for: " + file.getName());
 		        }
 				System.out.println("training proccess complete");
@@ -113,6 +165,17 @@ public class train_and_predict extends Frame implements ActionListener{
 			}
 		}
 		
+		if(holder == runHand){
+			if(!modelIsSet){
+				System.out.println("error: Model Directory Path is not set");
+			}
+			else if(!sampleIsSet){
+				System.out.println("error: Sample File Path is not set");
+			}
+			else{
+				
+			}
+		}
 		//need to adjust this so that it predicts on two different known files
 		if (holder == closeHand || holder == openHand){
 			try{
