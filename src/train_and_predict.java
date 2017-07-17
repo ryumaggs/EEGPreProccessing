@@ -23,6 +23,7 @@ public class train_and_predict extends Frame implements ActionListener{
 	JButton svm_path;
 	JButton set_model;
 	JButton set_sample;
+	JButton set_profile;
 	JButton train;
 	JButton closeHand;
 	JButton openHand;
@@ -30,18 +31,24 @@ public class train_and_predict extends Frame implements ActionListener{
 	JTextField dataPath;
 	JTextField modelPath;
 	JTextField samplePath;
+	JTextField profilePath;
 	
 	boolean dataIsSet;
 	boolean modelIsSet;
 	boolean sampleIsSet;
+	boolean profileIsSet;
 	
 	//Object through which commands can be sent to Arduino
 	ArduinoArm hand;
+	
+	Profile profile;
 	
 	public train_and_predict(){
 		dataIsSet = false;
 		modelIsSet = false;
 		sampleIsSet = false;
+		profileIsSet = false;
+		profile = new Profile();
 		//hand = new ArduinoArm();
 		//hand.initialize();
 		createGui();
@@ -49,7 +56,7 @@ public class train_and_predict extends Frame implements ActionListener{
 	
 	private void createGui(){
 		frame = new JFrame("train and predict");
-		frame.setSize(440,220);
+		frame.setSize(440,235);
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
@@ -65,16 +72,19 @@ public class train_and_predict extends Frame implements ActionListener{
 		modelPath = new JTextField("Model Directory Path",20);
 		set_sample = new JButton("Browse Sample");
 		samplePath = new JTextField("Testing Sample File Path", 20);
+		set_profile = new JButton("Browse Profile");
+		profilePath = new JTextField("Profile File Path", 20);
 		runHand = new JButton("Move Hand");
-		closeHand = new JButton("close hand");
-		openHand = new JButton("open hand");
+//		closeHand = new JButton("close hand");
+//		openHand = new JButton("open hand");
 		set_data.addActionListener(this);
 		train.addActionListener(this);
 		set_model.addActionListener(this);
 		set_sample.addActionListener(this);
+		set_profile.addActionListener(this);
 		runHand.addActionListener(this);
-		closeHand.addActionListener(this);
-		openHand.addActionListener(this);
+//		closeHand.addActionListener(this);
+//		openHand.addActionListener(this);
 		
 		JLabel padding = new JLabel();
 		padding.setPreferredSize(new Dimension (110,20));
@@ -106,13 +116,21 @@ public class train_and_predict extends Frame implements ActionListener{
 		constraint.gridwidth = 2;
 		constraint.gridx = 0;
 		constraint.gridy = 3;
-		panel.add(samplePath, constraint);
+		panel.add(profilePath, constraint);
 		constraint.gridwidth = 1;
 		constraint.gridx = 2;
 		constraint.gridy = 3;
+		panel.add(set_profile, constraint);
+		constraint.gridwidth = 2;
+		constraint.gridx = 0;
+		constraint.gridy = 4;
+		panel.add(samplePath, constraint);
+		constraint.gridwidth = 1;
+		constraint.gridx = 2;
+		constraint.gridy = 4;
 		panel.add(set_sample, constraint);
 		constraint.gridx = 1;
-		constraint.gridy = 4;
+		constraint.gridy = 5;
 		panel.add(runHand, constraint);
 		
 		frame.add(panel);
@@ -124,7 +142,7 @@ public class train_and_predict extends Frame implements ActionListener{
 		Object holder = e.getSource();
 		
 		//opens file choosers to save directory paths
-		if (holder == set_data || holder == set_model || holder == set_sample){
+		if (holder == set_data || holder == set_model || holder == set_sample || holder == set_profile){
 			JFileChooser chose = new JFileChooser(new File(System.getProperty("user.home") + System.getProperty("file.seperator")+"Desktop"));
 			chose.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 			int result = chose.showSaveDialog(this);
@@ -137,6 +155,11 @@ public class train_and_predict extends Frame implements ActionListener{
 				else if(holder == set_model){
 					modelPath.setText(chose.getSelectedFile().getAbsolutePath());
 					modelIsSet = true;
+				}
+				else if(holder == set_profile){
+					profilePath.setText(chose.getSelectedFile().getAbsolutePath());
+					Profile.load_profile(profilePath.getText(), profile);
+					profileIsSet = true;
 				}
 				else{
 					samplePath.setText(chose.getSelectedFile().getAbsolutePath());
@@ -172,32 +195,40 @@ public class train_and_predict extends Frame implements ActionListener{
 			else if(!sampleIsSet){
 				System.out.println("error: Sample File Path is not set");
 			}
-			else{
-				
+			else if(!profileIsSet){
+				System.out.println("error: Profile File Path is not set");
 			}
-		}
-		//need to adjust this so that it predicts on two different known files
-		if (holder == closeHand || holder == openHand){
-			try{
-				int writeMes = 0;
-				if (holder == closeHand)
-					writeMes = 1;
-				//consider rearranging the next few lines to lower number of opening and closing of objects
-				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "java -classpath libsvm.jar svm_predict \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\singleExec.txt\" \"C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\svm_testData.txt.model\"");
-				builder.redirectErrorStream(true);
-				Process q = builder.start();
-				BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
-				String line;
-				while(true){
-					line = r.readLine();
-					if (line == null) {break;}
-					if (line.equals("V from the prediction is: 1.0") || line.equals("V from the prediction is: -1.0")){
-						hand.writeMessage(writeMes);
-						break;
+			else{
+				try{
+					int counter = 0;
+					File dir = new File(modelPath.getText());
+					File[] models = dir.listFiles();
+					int[] modelDecisions = new int[models.length];
+					for(File model: models){
+						ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "java -classpath libsvm.jar svm_predict " + samplePath.getText() + " " + add_quotes(model.getAbsolutePath()));
+						builder.redirectErrorStream(true);
+						Process q = builder.start();
+						BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
+						String line;
+						while(true){
+							line = r.readLine();
+							if (line == null) {break;}
+							if (line.equals("V from the prediction is: 1.0")){
+								modelDecisions[counter] = 1;
+								counter ++;
+								break;
+							}
+							else if(line.equals("V from the prediction is: -1.0")){
+								modelDecisions[counter] = 0;
+								counter ++;
+								break;
+							}
+						}
+						r.close();
 					}
-				}
-				r.close();
-			} catch(IOException ep){ep.printStackTrace();}
+					hand.writeMessage(profile.makeDecision(modelDecisions));
+				}catch(IOException p){p.printStackTrace();}
+			}
 		}
 	}
 	
