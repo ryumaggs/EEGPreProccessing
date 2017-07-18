@@ -11,15 +11,7 @@ import javax.swing.JLabel;
 
 
 public class Experiment implements ActionListener,Runnable{
-	/*
-	 * Field definitions:
-	 * trialImages - ImageIcon array which contains the images you want to scroll through
-	 * buildStage - Experimental frame for images (panel, label)
-	 * begin - button to begin data recording and image scrolling
-	 * netStream - Object used for data streaming
-	 * lock - concurrency object that will prevent data to be written between image change and file mark
-	 */
-	private ImageIcon[] trialImages;
+	private ImageIcon[] Images;
 	private JFrame buildStage;
 	private JPanel panel;
 	private JLabel label;
@@ -28,30 +20,22 @@ public class Experiment implements ActionListener,Runnable{
 	private OutputStream output;
 	private static Lock lock;
 	
-	private JTextField dirtxt;
-	private JTextField destxt;
-	private JTextField porttxt;
+	private JTextField image_folder_path;
+	private JTextField output_folder_path;
+	private JTextField com_port;
 	
-	//blank constructor to instantiate the menu
 	public Experiment(){
 
 	}
 	
-	/*
-	 * Actual constructor that will load images, set up the JFrame, and start the data stream
-	 * Parameters: photos - Directory file path to the images you want to cycle through
-	 * 
-	 */
 	public Experiment(String photoDir, String outputfile, String port){
 		lock = new Lock();
 		
-		//set up datastreaming object
 		netStream = new DataStreaming();
 		netStream.setupconnection(outputfile, port);
 		output = netStream.getOutputWriter();
 		System.out.println("Datastream Initializing...");
 		
-		//reset and start the serial port reading
 		try{
 			output.write('v');
 			Thread.sleep(2000);
@@ -72,85 +56,71 @@ public class Experiment implements ActionListener,Runnable{
 		buildStage.setVisible(true);
 	}
 	
-	//Returns the lock initialized in the Experiment object
-	//Is called in DataStreaming.java
+   /* Returns the lock initialized in the Experiment object
+	* Is called in DataStreaming.java
+	*/
 	public static Lock get_lock(){
 		return lock;
 	}
-	
-	/*Loop function whos orders:
-	 * Blank (1 seconds)
-	 * loop:
-	 * 	Image(1 seconds) - prompt
-	 * 	Blank (1 seconds)
-	 * 	Image(1 seconds) - experimental
-	 * 	blank(2 seconds)
-	 */
 	public void scroll_images(){
 		int current = 0;
 		int stopped = 0;
 		label.setIcon(null);
 		try{
-		Thread.sleep(1000);
-		}catch(InterruptedException e){e.printStackTrace();}
-		while(true){
-			try{
-				label.setIcon(trialImages[current]);
+			Thread.sleep(1000);
+			while(true){
+				label.setIcon(Images[current]);
 				Thread.sleep(1000);
+				
 				label.setIcon(null);
 				Thread.sleep(1000);
+				
 				lock.lock();
-				label.setIcon(trialImages[current]);
+				label.setIcon(Images[current]);
 				netStream.write2file("MARKER", true);
 				lock.unlock();
 				Thread.sleep(1000);
-			}catch(Exception e){e.printStackTrace();}
-			current++;
-			if(current >= trialImages.length)
-				current = 0;
-			stopped++;
-			label.setIcon(null);
-			if (stopped == 64){
-				break;
-			}
-			try{
+				current++;
+				
+				if(current >= Images.length)
+					current = 0;
+				
+				stopped++;
+				
+				label.setIcon(null);
+				if (stopped == 64){
+					break;
+				}
 				Thread.sleep(2000);
-			}catch(InterruptedException ep){System.out.println("erorro");}
-		}
+			}
+		}catch(InterruptedException ep){ep.printStackTrace();}
 		netStream.endstream();
 		System.out.print("experiment complete");
 		System.exit(1);
 	}
 	
-	/*Function to load images into an ImageIcon array
-	 * Parameter: photo - Directory file path for the photos
-	 * Output: initializes each element in the ImageIcon array, trialImages, with new ImageIcon
-	 */
 	public void loadImages(String photoDir)throws IOException{
 		File dir = new File(photoDir);
 		File[] directoryListing = dir.listFiles();
-		trialImages = new ImageIcon[directoryListing.length];
+		Images = new ImageIcon[directoryListing.length];
 		for (int i = 0; i < directoryListing.length; i++){
-			trialImages[i] = new ImageIcon(directoryListing[i].getPath());
+			Images[i] = new ImageIcon(directoryListing[i].getPath());
 		}
 	}
 	
-	/*
-	 * Function that thread calls to scroll the images
-	 */
 	public void run(){
 		scroll_images();
 	}
 	
-	//Allows the 'begin' button to work
 	public void actionPerformed(ActionEvent e){
 		Object holder = e.getSource();
+		
 		if (holder == begin){
-			String dir = dirtxt.getText();
-			String outputfile = destxt.getText();
-			String port = porttxt.getText();
-			if(dir.equals("") || outputfile.equals("") || port.equals("")){
-				if(dirtxt.getText().equals("")){
+			String image_dir = image_folder_path.getText();
+			String outputfile = output_folder_path.getText();
+			String port = com_port.getText();
+			if(image_dir.equals("") || outputfile.equals("") || port.equals("")){
+				if(image_folder_path.getText().equals("")){
 					System.out.println("Missing path to image directory");
 				}
 				else if (outputfile.equals("")){
@@ -160,8 +130,9 @@ public class Experiment implements ActionListener,Runnable{
 					System.out.println("Missing portname for OPENBCI");
 				}
 			}
+			//need to start the image rotation on separate thread or else image changes are not visible
 			else{
-				Experiment images = new Experiment(dir, outputfile, port);
+				Experiment images = new Experiment(image_dir, outputfile, port);
 				Thread t = new Thread(images);
 				t.start();
 				(SwingUtilities.windowForComponent(begin)).dispose();
@@ -182,22 +153,23 @@ public class Experiment implements ActionListener,Runnable{
 		JLabel dirlab = new JLabel("Path to Image Directory: ");
 		JLabel deslab = new JLabel("Filename for Output Data: ");
 		JLabel portlab = new JLabel("Portname for OPENBCI: ");
-		dirtxt = new JTextField("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\src\\ExperimentPhotos\\HC",20);
-		destxt = new JTextField("CLOSED.txt",20);
-		porttxt = new JTextField("COM4", 5);
+		image_folder_path = new JTextField("C:\\Users\\Ryan Yu\\workspace\\ImportantFreq\\src\\ExperimentPhotos\\HC",20);
+		output_folder_path = new JTextField("CLOSED.txt",20);
+		com_port = new JTextField("COM4", 5);
 		
 		panel.add(dirlab);
-		panel.add(dirtxt);
+		panel.add(image_folder_path);
 		panel.add(deslab);
-		panel.add(destxt);
+		panel.add(output_folder_path);
 		panel.add(portlab);
-		panel.add(porttxt);
+		panel.add(com_port);
 		panel.add(begin);
 		
 		buildStage.add(panel,BorderLayout.CENTER);
 		buildStage.setVisible(true);
 	}
 	
+	//used to load the menu
 	public static void main(String args[]){
 		Experiment menu = new Experiment();
 		menu.load_menu();
