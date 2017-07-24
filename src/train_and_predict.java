@@ -178,7 +178,10 @@ public class train_and_predict extends Frame implements ActionListener{
 				File[] channels = dir.listFiles();
 				try{
 					for(File file : channels){
-						ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "java -classpath libsvm.jar svm_train " + add_quotes(file.getAbsolutePath()));
+						ProcessBuilder builder = new ProcessBuilder("cmd.exe", 
+																	"/c", 
+																	"java -classpath libsvm.jar svm_train " 
+																	+ add_quotes(file.getAbsolutePath()));
 						builder.redirectErrorStream(true);
 						Process process = builder.start();
 						System.out.println("finished training for: " + file.getName());
@@ -205,7 +208,11 @@ public class train_and_predict extends Frame implements ActionListener{
 					File[] models = dir.listFiles();
 					int[] modelDecisions = new int[models.length];
 					for(File model: models){
-						ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "java -classpath libsvm.jar svm_predict " + samplePath.getText() + " " + add_quotes(model.getAbsolutePath()));
+						ProcessBuilder builder = new ProcessBuilder("cmd.exe", 
+																	"/c", 
+																	"java -classpath libsvm.jar svm_predict " 
+																	+ samplePath.getText() + " " 
+																	+ add_quotes(model.getAbsolutePath()));
 						builder.redirectErrorStream(true);
 						Process q = builder.start();
 						BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));

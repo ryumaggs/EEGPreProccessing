@@ -243,7 +243,7 @@ public class RawFilter {
 					single_trial_filtereddata[sampleIndex] = data[NUM_DATA_POINTS*trial_count + sampleIndex][channel];
 				}
 				
-				fft_single_trial_filtereddata = Channel.fft(single_trial_filtereddata);
+				fft_single_trial_filtereddata = Complex.fft(single_trial_filtereddata);
 				
 				for(int freq = 0; freq < NUM_DATA_POINTS; freq++){
 					double curFreq = (double)freq * samprate / NUM_DATA_POINTS;
