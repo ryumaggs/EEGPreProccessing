@@ -25,7 +25,9 @@ public class RawFilter {
 	public RawFilter(String dirPath, String destination, int chan){
 		File folder = new File(dirPath);
 		File[] listOfFiles = folder.listFiles();
-		
+		long time_begin = 0;
+		long time_end = 0;
+		long total_time = 0;
 		frequency_ranges = new int[2][4];
 		frequency_ranges[0][0] = 5;
 		frequency_ranges[1][0] = 40;
@@ -38,9 +40,10 @@ public class RawFilter {
 		
 		for(File file : listOfFiles){
 			if (file.isFile()){
+				time_begin = System.currentTimeMillis();
 				num_trials_global = 0;
 				
-				System.out.println("-----------------------");
+				System.out.println("\n-----------------------");
 				int trial_type = check_file_type(file);
 				
 				parsedunfilteredData = parseRecordingData(file);
@@ -48,7 +51,6 @@ public class RawFilter {
 				
 				compressedData= baselineCorrect_and_Compress_data(parsedunfilteredData);
 				System.out.println("compressed and baseline corrected the data");
-				System.out.println("compressed length: " + compressedData[0].length);
 				
 				int low_frequency_bound = 0;
 				int high_frequency_bound = 0;
@@ -59,15 +61,16 @@ public class RawFilter {
 
 					filteredData = bandpassfilter(compressedData, 256, low_frequency_bound, high_frequency_bound);
 					
-					System.out.println("bandpassfiltered the data for range: " + low_frequency_bound +"," + high_frequency_bound);
-					
 					writeToFile(destination,trial_type,Integer.toString(low_frequency_bound)+Integer.toString(high_frequency_bound));
 					
-					System.out.println("wrote to file");
-				
+					System.out.println("bandpassfiltered and saved the data for freq range: " + low_frequency_bound +"," + high_frequency_bound);
 				}
+				time_end = System.currentTimeMillis();
+				total_time += (time_end - time_begin);
 			}
 		}
+		System.out.println("-----------------------");
+		System.out.println("\ntotal time taken: " + total_time + " milliseconds");
 		System.out.println("\nDone.");
 	}
 	

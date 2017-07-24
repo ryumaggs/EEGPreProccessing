@@ -1,4 +1,3 @@
-//import java.io.BufferedReader;
 import java.io.BufferedInputStream;
 import java.io.OutputStream;
 import gnu.io.CommPortIdentifier; 
@@ -6,8 +5,6 @@ import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent; 
 import gnu.io.SerialPortEventListener; 
 import java.util.Enumeration;
-//import java.util.Scanner;
-//import java.util.ArrayList;
 import java.text.DecimalFormat;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -17,11 +14,10 @@ import java.io.IOException;
 public class DataStreaming implements SerialPortEventListener{
 	private BufferedInputStream input;
 	private OutputStream output;
-	SerialPort serialPort;
-	String portName = "COM4";
+	private SerialPort serialPort;
+	private String portName = "COM4";
 	private String Filename;
 	private BufferedWriter filewriter;
-	private Lock lock;
 	
 	private static final int TIME_OUT = 5000;
 	private static final int baudrate = 115200;
@@ -29,16 +25,15 @@ public class DataStreaming implements SerialPortEventListener{
 	private static final double accelscale = .002/16;
 	private static DecimalFormat format2 = new DecimalFormat(".##");
 	
-	private int linecounter; 			//used for counting the first 5 lines of OPENBCI initialization data
-	private byte[] backbuffer;			//store data that can still be used as a result of detecting corrupted packets
+	private int packet_loss_counter;
+	private int linecounter; 			
+	private byte[] backbuffer;		
 	private boolean usebackbuffer;
 	
 	//Initialize connections to the ComPort and set up  Buffered Streams to read and write to OPENBCI
 	public void setupconnection(String filename, String port){
-		lock = Experiment.get_lock();
 		linecounter = 0;
 		usebackbuffer = false;
-		//String portName = "COM3";
 		portName = port;
 		Filename = filename;
 		
@@ -63,23 +58,14 @@ public class DataStreaming implements SerialPortEventListener{
 			return;
 		}
 		
-		
 		try {
-			// open serial port, and use class name for the appName.
-			serialPort = (SerialPort) portId.open(this.getClass().getName(),
-					TIME_OUT);
-
-			// set port parameters
+			serialPort = (SerialPort) portId.open(this.getClass().getName(),TIME_OUT);
 			serialPort.setSerialPortParams(baudrate,
 					SerialPort.DATABITS_8,
 					SerialPort.STOPBITS_1,
 					SerialPort.PARITY_NONE);
-
-			// open the streams
 			input = new BufferedInputStream(serialPort.getInputStream(),65536);
 			output = serialPort.getOutputStream();
-			
-			// add event listeners
 			serialPort.addEventListener((SerialPortEventListener) this);
 			serialPort.notifyOnDataAvailable(true);
 		} catch (Exception e) {
@@ -87,7 +73,6 @@ public class DataStreaming implements SerialPortEventListener{
 		}
 	}
 	
-	//Listens to serialPort for incoming signals and parse them into readable format
 	public synchronized void serialEvent(SerialPortEvent oEvent) {
 			try {
 				while(input.available() >= 33){
@@ -102,7 +87,7 @@ public class DataStreaming implements SerialPortEventListener{
 					//Read the first 4 lines of OPENBCI initialization signal
 					if(isalpha(c) && linecounter <4){
 						linecounter ++;
-						String inputLine= ((char) c) + charlinereader();
+						String inputLine= ((char) c) + line_reader();
 						write2file(inputLine, false);
 					}
 					//Read the datastreaming initialization signal "$$$" (5th line)
@@ -138,16 +123,14 @@ public class DataStreaming implements SerialPortEventListener{
 							}
 						}
 						//If packet is consistent, then process the packet and write it to a file
-						if(handleconsistency(inputStrand)){
+						if(check_data_format(inputStrand)){
 							double[] data = sampleparser(inputStrand);
 							String sdata = data2String(data) + '\n';
-							lock.check_lock();
 							write2file(sdata, false);
 						}
-						
 						else{
 							System.out.println("lost packet");
-							//write2file("##################LOST PACKET###################", true);
+							packet_loss_counter++;
 						}
 					}
 				}
@@ -159,7 +142,7 @@ public class DataStreaming implements SerialPortEventListener{
 	/*
 	 * Check to see that the packet of data (33 bytes) is of consistent format (a header of 0xA0 and a footer between 0xC0-0xC6)
 	 */
-	private boolean handleconsistency(byte[] data){
+	private boolean check_data_format(byte[] data){
 		int lastidx = data.length -1;
 		int headerint = -1;
 		//if the header and footer exist in the correct position, then the packet is consistent, so return true
@@ -201,10 +184,11 @@ public class DataStreaming implements SerialPortEventListener{
 		return false;
 	}
 	
-	//ReadLine function for BufferedOutputStream
-	//Only works for reading lines that begin with an Alphabetical character
-	//Returns the line read or an empty string
-	private String charlinereader(){
+	/*ReadLine function for BufferedOutputStream
+	 *Only works for reading lines that begin with an Alphabetical character
+	 *Returns the line read or an empty string
+	 */
+	private String line_reader(){
 		String line = "";
 		try{
 			int curchar = input.read();
@@ -220,22 +204,23 @@ public class DataStreaming implements SerialPortEventListener{
 		return line;
 	}
 
-	//Parse a line of raw OPENCBCI data into the follow components:
-	//samplenumber, eeg data, acceleration data
-	//Returns a double array of parsed data for one line of raw OPENBCI data
+	/*Parse a line of raw OPENCBCI data into the follow components:
+	 *samplenumber, eeg data, acceleration data
+	 *Returns a double array of parsed data for one line of raw OPENBCI data
+	 */
 	private double[] sampleparser(byte[] sample){
 		double[] data = new double[12];
 		long l = sample[1] & 0xFFL;
 		data[0] = (int) l;	//samplenumber
 		//eeg data
-		data[1] = interpret24bitAsInt32(bytesubarray(sample,2,4)) * eegscale;
-		data[2] = interpret24bitAsInt32(bytesubarray(sample,5,7)) * eegscale;
-		data[3] = interpret24bitAsInt32(bytesubarray(sample,8,10)) * eegscale;
-		data[4] = interpret24bitAsInt32(bytesubarray(sample,11,13)) * eegscale;
-		data[5] = interpret24bitAsInt32(bytesubarray(sample,14,16)) * eegscale;
-		data[6] = interpret24bitAsInt32(bytesubarray(sample,17,19)) * eegscale;
-		data[7] = interpret24bitAsInt32(bytesubarray(sample,20,22)) * eegscale;
-		data[8] = interpret24bitAsInt32(bytesubarray(sample,23,25)) * eegscale;
+		data[1] = convert_24bit_to_32bit_int(get_sub_byte_array(sample,2,4)) * eegscale;
+		data[2] = convert_24bit_to_32bit_int(get_sub_byte_array(sample,5,7)) * eegscale;
+		data[3] = convert_24bit_to_32bit_int(get_sub_byte_array(sample,8,10)) * eegscale;
+		data[4] = convert_24bit_to_32bit_int(get_sub_byte_array(sample,11,13)) * eegscale;
+		data[5] = convert_24bit_to_32bit_int(get_sub_byte_array(sample,14,16)) * eegscale;
+		data[6] = convert_24bit_to_32bit_int(get_sub_byte_array(sample,17,19)) * eegscale;
+		data[7] = convert_24bit_to_32bit_int(get_sub_byte_array(sample,20,22)) * eegscale;
+		data[8] = convert_24bit_to_32bit_int(get_sub_byte_array(sample,23,25)) * eegscale;
 		
 		//acceleration data
 		for(int accel= 0; accel < 3; accel++){
@@ -243,13 +228,13 @@ public class DataStreaming implements SerialPortEventListener{
 			byte[] unexpandedint = new byte[2];
 			unexpandedint[0] = sample[basecount];
 			unexpandedint[1] = sample[basecount +1];
-			data[accel + 9] = interpret16bitAsInt32(unexpandedint) * accelscale;
+			data[accel + 9] = convert_16bit_to_32bit_int(unexpandedint) * accelscale;
 		}
 		return data;
 	}
 	
 	//Returns a subarray (byte) of a byte array (start and end are inclusive)
-	private byte[] bytesubarray(byte[] arr, int start, int end){
+	private byte[] get_sub_byte_array(byte[] arr, int start, int end){
 		byte[] subarr = new byte[end-start+1];
 		for(int i=0; i<subarr.length; i++){
 			subarr[i] = arr[i+start];
@@ -292,10 +277,11 @@ public class DataStreaming implements SerialPortEventListener{
 		catch (Exception e) {
 			System.err.println(e.toString());
 			}
+		System.out.println("Total packets lost: " + packet_loss_counter);
 	}
 	
 	//OPENBCI function to convert 24bit OPENBCI eeg data to readable 32bit int
-	int interpret24bitAsInt32(byte[] byteArray) {     
+	int convert_24bit_to_32bit_int(byte[] byteArray) {     
 	    int newInt = (  
 	     ((0xFF & byteArray[0]) << 16) |  
 	     ((0xFF & byteArray[1]) << 8) |   
@@ -310,7 +296,7 @@ public class DataStreaming implements SerialPortEventListener{
 	}  
 	
 	//OPENBCI function to convert 16bit OPENBCI acceleration data to readable 32bit int
-	int interpret16bitAsInt32(byte[] byteArray) {
+	int convert_16bit_to_32bit_int(byte[] byteArray) {
 	    int newInt = (
 	      ((0xFF & byteArray[0]) << 8) |
 	       (0xFF & byteArray[1])
@@ -327,26 +313,8 @@ public class DataStreaming implements SerialPortEventListener{
 		return output;
 	}
 	
+//	main function for testing purposes only
 	public static void main(String[] args){
-//		for testing purposes only
-		
-		
-//		DataStreaming teststream = new DataStreaming();
-//		teststream.setupconnection("Newtester.txt");
-//		Thread t=new Thread() {
-//			public void run() {
-//			//the following line will keep this app alive for 1000 seconds,
-//			//waiting for events to occur and responding to them (printing incoming messages to console).
-//			try {
-//				Thread.sleep(10000);
-//				//teststream.endstream();
-//				System.out.println("Finished");
-//			} 
-//			catch (InterruptedException ie) {}
-//			}
-//		};
-//		t.start();
-//		System.out.println("Started1");
 	}
 }
 
