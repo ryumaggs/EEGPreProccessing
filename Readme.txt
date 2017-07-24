@@ -21,8 +21,18 @@ Project Overview
 	
 	-Taking the predictions from the SVM models, we use an Arduino Board to control the robotic arm
 **************************************
+Setup/Installation -Hardware
+------------------
+3D Robotic Arm:
+	-Arm 3D printing models can be found at: http://inmoov.fr/hand-and-forarm/
+	
+	-Will also find other parts needed to get arm to move at link above. 
 
-Setup/Installation
+EEG Headset and board:
+	-OpenBCI headsets can be/were purchased from OpenBCI shop: https://shop.openbci.com/collections/frontpage
+		-a Cyton 8-channel board was used for this project
+
+Setup/Installation - Software
 ------------------
 LIBSVM:
 	-LIBSVM is the SVM used in this project (LIBSVM documentation: https://www.csie.ntu.edu.tw/~r94100/libsvm-2.8/README)
@@ -49,7 +59,7 @@ Getting Started
 		
 	b.Open the OpenBCI GUI and click "start live streaming":
 		-Make note of which COM port it recognizes
-		-Adjust headset (tighten or loosen nodes) untill the 0-15 microvolts are displayed on each channel
+		-Adjust headset (tighten or loosen nodes) until the 0-15 microvolts are displayed on each channel
 	
 	c.Close OpenBCI GUI
 	
@@ -63,7 +73,10 @@ Getting Started
 		-click "Run Mu Filter"
 
 3. Training SVM models:
-	-Incomplete-
+	a. Run filterGUI.java:
+		-Click "Run Training and Prediction"
+	b. Set training data directory path ("Browse Data")
+	c. Hit Train (model files will be generated in the same directory as training directory)
 
 Rest of "Getting Started" still incomplete
 **************************************
@@ -73,9 +86,12 @@ Experimental Files Breakdown (INCOMPLETE):
 DataStreaming.java:
 	Connects to comPort and initilizes datastreaming from
 	OpenBci wireless reciever at 256Hz (256 datasamples/s).
+	
 	Includes parsing function that simultaenously translate 
 	raw OpenBCI data to readable EEG data as the data is being
-	read in.  Data are written to an empty txt file passed in 
+	read in.  
+	
+	Data are written to an empty txt file passed in 
 	as a parameter when setting up connection to port.
 	
 Experiment.java:
@@ -84,10 +100,10 @@ Experiment.java:
 		Design:
 			Image of closed/open fist
 		Presentation (one trail):
-			Blank (2s delay)
-			Prompt image (2s delay)
-			Blank (2s delay)
-			Experimental image (2s delay)
+			Blank (1s delay)
+			Prompt image (1s delay)
+			Blank (1s delay)
+			Experimental image (1s delay)
 			Blank (2s delay)
 	Call the DataStreaming class for simultaneous streaming
 	with experiment.
@@ -95,7 +111,16 @@ Experiment.java:
 
 PreProcessing Files Breakdown:
 ------------------
-
+RawFilter.java:
+	a.Seperates data into channels
+	b.Baseline corrects EEG data:
+		-Take an average of 50 samples before desired data and subtract it from
+		desired data. 
+	c.Filters EEG data (5-40hz, 5-14hz, 8-12hz, and 10-14hz):
+		-Computes the FFT of desired data
+		-Sets magnitude of any frequency beyond range to 0
+		-Multiplies magnitude of frequency within range by 2
+	d.Saves frequencies in LIBSVM format to text files within the specified directory
 **************************************
 
 Auxiliary Files:
@@ -103,20 +128,15 @@ Auxiliary Files:
 Complex.java:
 	Complex number class type that is used when passing in
 	data to be trained by SVM.
-Lock.java:
-	Lock/Unlock mechanism to provide for concurrency and
-	synchronization of datastreaming and experimental
-	design (trial timing and insertion of trial "markers"
-	in streaming data.
 **************************************
 
 Files not in use:
 ------------------
-ArduinoArm.java
-Channel.java
-Trail.java
+BCItester.txt
+Channel.txt
 DescisionTree.java
-train_and_predict.java
+Lock.java
+Trial.java
 **************************************
 
 Citations:
