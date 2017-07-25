@@ -25,6 +25,7 @@ public class train_and_predict extends Frame implements ActionListener{
 	JButton set_sample;
 	JButton set_profile;
 	JButton train;
+	JButton load_arm;
 	JButton closeHand;
 	JButton openHand;
 	JButton runHand;
@@ -68,6 +69,7 @@ public class train_and_predict extends Frame implements ActionListener{
 		set_data = new JButton("Browse Data");
 		dataPath = new JTextField("Training Data Directory Path",20);
 		train = new JButton("Train");
+		load_arm = new JButton("connect arm");
 		set_model = new JButton("Browse Model");
 		modelPath = new JTextField("Model Directory Path",20);
 		set_sample = new JButton("Browse Sample");
@@ -79,6 +81,7 @@ public class train_and_predict extends Frame implements ActionListener{
 //		openHand = new JButton("open hand");
 		set_data.addActionListener(this);
 		train.addActionListener(this);
+		load_arm.addActionListener(this);
 		set_model.addActionListener(this);
 		set_sample.addActionListener(this);
 		set_profile.addActionListener(this);
@@ -105,32 +108,35 @@ public class train_and_predict extends Frame implements ActionListener{
 		constraint.gridx = 1;
 		constraint.gridy = 1;
 		panel.add(train, constraint);
+		constraint.gridx = 1;
+		constraint.gridy = 2;
+		panel.add(load_arm, constraint);
 		constraint.gridwidth = 2;
 		constraint.gridx = 0;
-		constraint.gridy = 2;
+		constraint.gridy = 3;
 		panel.add(modelPath, constraint);
 		constraint.gridwidth = 1;
 		constraint.gridx = 2;
-		constraint.gridy = 2;
+		constraint.gridy = 3;
 		panel.add(set_model, constraint);
 		constraint.gridwidth = 2;
 		constraint.gridx = 0;
-		constraint.gridy = 3;
+		constraint.gridy = 4;
 		panel.add(profilePath, constraint);
 		constraint.gridwidth = 1;
 		constraint.gridx = 2;
-		constraint.gridy = 3;
+		constraint.gridy = 4;
 		panel.add(set_profile, constraint);
 		constraint.gridwidth = 2;
 		constraint.gridx = 0;
-		constraint.gridy = 4;
+		constraint.gridy = 5;
 		panel.add(samplePath, constraint);
 		constraint.gridwidth = 1;
 		constraint.gridx = 2;
-		constraint.gridy = 4;
+		constraint.gridy = 5;
 		panel.add(set_sample, constraint);
 		constraint.gridx = 1;
-		constraint.gridy = 5;
+		constraint.gridy = 6;
 		panel.add(runHand, constraint);
 		
 		frame.add(panel);
@@ -191,28 +197,39 @@ public class train_and_predict extends Frame implements ActionListener{
 			}
 		}
 		
+		if(holder == load_arm){
+			hand = new ArduinoArm();
+			hand.initialize();
+		}
+		
 		if(holder == runHand){
 			if(!modelIsSet){
-				System.out.println("error: Model Directory Path is not set");
+				System.err.println("error: Model Directory Path is not set");
 			}
 			else if(!sampleIsSet){
-				System.out.println("error: Sample File Path is not set");
+				System.err.println("error: Sample File Path is not set");
 			}
 			else if(!profileIsSet){
-				System.out.println("error: Profile File Path is not set");
+				System.err.println("error: Profile File Path is not set");
+			}
+			else if(hand == null){
+				System.err.print("hand is not connected");
 			}
 			else{
 				try{
 					int counter = 0;
-					File dir = new File(modelPath.getText());
-					File[] models = dir.listFiles();
-					int[] modelDecisions = new int[models.length];
-					for(File model: models){
+					File sample_dir = new File(samplePath.getText());
+					File[] tests = sample_dir.listFiles();
+					int[] modelDecisions = new int[tests.length];
+					System.out.println(modelPath.getText());
+					for(File test_channel: tests){
+						System.out.println(test_channel.getAbsolutePath());
+						System.out.println(modelPath.getText() + "\\" + test_channel.getName()+".model");
 						ProcessBuilder builder = new ProcessBuilder("cmd.exe", 
 																	"/c", 
 																	"java -classpath libsvm.jar svm_predict " 
-																	+ samplePath.getText() + " " 
-																	+ add_quotes(model.getAbsolutePath()));
+																	+ test_channel.getAbsolutePath() + " " 
+																	+ add_quotes(modelPath.getText()+"\\"+test_channel.getName()+".model"));
 						builder.redirectErrorStream(true);
 						Process q = builder.start();
 						BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));

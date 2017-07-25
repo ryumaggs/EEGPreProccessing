@@ -148,9 +148,11 @@ public class Profile {
 			weightedAverage += modelDecisions[idx]*weights[idx];
 		}
 		if(weightedAverage >= best_thresh){
+			System.out.println("returning 1");
 			return 1;
 		}
 		else{
+			System.out.println("returning 0");
 			return 0;
 		}
 	}

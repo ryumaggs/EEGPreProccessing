@@ -18,7 +18,6 @@ public class Experiment implements ActionListener,Runnable{
 	private JButton begin;
 	private DataStreaming netStream;
 	private OutputStream output;
-	private static Lock lock;
 	
 	private JTextField image_folder_path;
 	private JTextField output_folder_path;
@@ -28,9 +27,7 @@ public class Experiment implements ActionListener,Runnable{
 
 	}
 	
-	public Experiment(String photoDir, String outputfile, String port){
-		lock = new Lock();
-		
+	public Experiment(String photoDir, String outputfile, String port){		
 		netStream = new DataStreaming();
 		netStream.setupconnection(outputfile, port);
 		output = netStream.getOutputWriter();
@@ -56,42 +53,35 @@ public class Experiment implements ActionListener,Runnable{
 		buildStage.setVisible(true);
 	}
 	
-   /* Returns the lock initialized in the Experiment object
-	* Is called in DataStreaming.java
-	*/
-	public static Lock get_lock(){
-		return lock;
-	}
 	public void scroll_images(){
-		int current = 0;
-		int stopped = 0;
+		int currentImageIndex = 0;
+		int imagesPlayed_counter = 0;
 		label.setIcon(null);
 		try{
 			Thread.sleep(1000);
 			while(true){
-				label.setIcon(Images[current]);
+				label.setIcon(Images[currentImageIndex]);
 				Thread.sleep(1000);
 				
 				label.setIcon(null);
 				Thread.sleep(1000);
-				
-				lock.lock();
-				label.setIcon(Images[current]);
-				netStream.write2file("MARKER", true);
-				lock.unlock();
+		
+				label.setIcon(Images[currentImageIndex]);
+		
 				Thread.sleep(1000);
-				current++;
+				currentImageIndex++;
 				
-				if(current >= Images.length)
-					current = 0;
+				if(currentImageIndex >= Images.length)
+					currentImageIndex = 0;
 				
-				stopped++;
+				imagesPlayed_counter++;
 				
 				label.setIcon(null);
-				if (stopped == 64){
+				Thread.sleep(2000);
+				
+				if (imagesPlayed_counter == 64){
 					break;
 				}
-				Thread.sleep(2000);
 			}
 		}catch(InterruptedException ep){ep.printStackTrace();}
 		netStream.endstream();
