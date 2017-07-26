@@ -33,8 +33,9 @@ class svm_predict {
 		return Integer.parseInt(s);
 	}
 
-	private static void predict(BufferedReader input, svm_model model, int predict_probability) throws IOException
+	private static double[] predict(BufferedReader input, svm_model model, int predict_probability) throws IOException
 	{
+		ArrayList<Double> predictionz = new ArrayList<Double>();
 		int correct = 0;
 		int total = 0;
 		double error = 0;
@@ -56,10 +57,6 @@ class svm_predict {
 				int[] labels=new int[nr_class];
 				svm.svm_get_labels(model,labels);
 				prob_estimates = new double[nr_class];
-				//output.writeBytes("labels");
-				//or(int j=0;j<nr_class;j++)
-					//output.writeBytes(" "+labels[j]);
-				//output.writeBytes("\n");
 			}
 		}
 		while(true)
@@ -83,16 +80,11 @@ class svm_predict {
 			if (predict_probability==1 && (svm_type==svm_parameter.C_SVC || svm_type==svm_parameter.NU_SVC))
 			{
 				v = svm.svm_predict_probability(model,x,prob_estimates);
-				//output.writeBytes(v+" ");
-				//for(int j=0;j<nr_class;j++)
-					//output.writeBytes(prob_estimates[j]+" ");
-				//output.writeBytes("\n");
 			}
 			else
 			{
 				v = svm.svm_predict(model,x);
-				System.out.println("V from the prediction is: " + v);
-				//output.writeBytes(v+"\n");
+				predictionz.add(v);
 			}
 
 			if(v == target)
@@ -121,6 +113,11 @@ class svm_predict {
 			svm_predict.info(correct+"\n");
 			svm_predict.info(total+"\n");
 		}
+		double[] target = new double[predictionz.size()];
+		for(int index = 0; index < target.length; index++){
+			target[index] = predictionz.get(index).doubleValue();
+		}
+		return target;
 	}
 
 	private static void exit_with_help()
@@ -132,8 +129,10 @@ class svm_predict {
 		System.exit(1);
 	}
 
-	public static void main(String argv[]) throws IOException
+	public static double[] get_Predictions(String argv[]) throws IOException
 	{
+		double[] model_predictions = new double[1];
+		
 		int i, predict_probability=0;
         	svm_print_string = svm_print_stdout;
 
@@ -163,11 +162,8 @@ class svm_predict {
 		try 
 		{
 			BufferedReader input = new BufferedReader(new FileReader(argv[i]));
-			System.out.println("opened the test file");
 			//DataOutputStream output = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(argv[i+2])));
-			System.out.println("asdasidjasid: " + argv[i+1]);
 			svm_model model = svm.svm_load_model(argv[i+1]);
-			System.out.println("opened the model file");
 			if (model == null)
 			{
 				System.err.print("can't open model file "+argv[i+1]+"\n");
@@ -188,10 +184,8 @@ class svm_predict {
 					svm_predict.info("Model supports probability estimates, but disabled in prediction.\n");
 				}
 			}
-			predict(input,model,predict_probability);
-			//System.out.println("made it past the prediction statemet");
+			model_predictions = predict(input,model,predict_probability);
 			input.close();
-			//output.close();
 		} 
 		catch(FileNotFoundException e) 
 		{
@@ -203,5 +197,17 @@ class svm_predict {
 			System.out.println("exiting with array out of bounds exception");
 			exit_with_help();
 		}
+		return model_predictions;
+	}
+	
+	public static void main(String args[]){
+		String[] test_arg = new String[2];
+		double[] tester;
+		test_arg[0] = "C:/Users/Ryan Yu/workspace/ImportantFreq/src/FilteredDataFolder/Bob/Best Frequency Set/Channel0_514.txt";
+		test_arg[1] = "C:/Users/Ryan Yu/workspace/ImportantFreq/src/ModelFolder/Channel0_514.txt.model";
+		try{
+			tester = get_Predictions(test_arg);
+			System.out.println(Arrays.toString(tester));
+		}catch(IOException e){e.printStackTrace();}
 	}
 }

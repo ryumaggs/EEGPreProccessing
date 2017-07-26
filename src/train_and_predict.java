@@ -180,20 +180,8 @@ public class train_and_predict extends Frame implements ActionListener{
 				System.out.println("error: Training Data Directory Path is not set");
 			else{
 				System.out.println("started training proccess...");
-				File dir = new File(dataPath.getText());
-				File[] channels = dir.listFiles();
-				try{
-					for(File file : channels){
-						ProcessBuilder builder = new ProcessBuilder("cmd.exe", 
-																	"/c", 
-																	"java -classpath libsvm.jar svm_train " 
-																	+ add_quotes(file.getAbsolutePath()));
-						builder.redirectErrorStream(true);
-						Process process = builder.start();
-						System.out.println("finished training for: " + file.getName());
-		        }
-				System.out.println("training proccess complete");
-			}catch(IOException p){p.printStackTrace();}
+				svm_train.run_Directory(dataPath.getText(), null);
+				System.out.println("\ntraining proccess complete");
 			}
 		}
 		
@@ -220,49 +208,25 @@ public class train_and_predict extends Frame implements ActionListener{
 					int counter = 0;
 					File sample_dir = new File(samplePath.getText());
 					File[] tests = sample_dir.listFiles();
-					int[] modelDecisions = new int[tests.length];
-					System.out.println(modelPath.getText());
+					double[] modelDecisions = new double[tests.length];
 					for(File test_channel: tests){
-						System.out.println(test_channel.getAbsolutePath());
-						System.out.println(modelPath.getText() + "\\" + test_channel.getName()+".model");
-						ProcessBuilder builder = new ProcessBuilder("cmd.exe", 
-																	"/c", 
-																	"java -classpath libsvm.jar svm_predict " 
-																	+ test_channel.getAbsolutePath() + " " 
-																	+ add_quotes(modelPath.getText()+"\\"+test_channel.getName()+".model"));
-						builder.redirectErrorStream(true);
-						Process q = builder.start();
-						BufferedReader r = new BufferedReader(new InputStreamReader(q.getInputStream()));
-						String line;
-						while(true){
-							line = r.readLine();
-							if (line == null) {break;}
-							if (line.equals("V from the prediction is: 1.0")){
-								modelDecisions[counter] = 1;
-								counter ++;
-								break;
-							}
-							else if(line.equals("V from the prediction is: -1.0")){
-								modelDecisions[counter] = 0;
-								counter ++;
-								break;
-							}
-						}
-						r.close();
+						String[] argv = new String[2];
+						argv[0] = test_channel.getAbsolutePath();
+						argv[1] = modelPath.getText()+"\\"+test_channel.getName()+".model";
+						modelDecisions[counter] = svm_predict.get_Predictions(argv)[0];
+						counter++;
 					}
+					System.out.println(Arrays.toString(modelDecisions));
 					hand.writeMessage(profile.makeDecision(modelDecisions));
+					try{
+						Thread.sleep(2000);
+					}catch(Exception q){q.printStackTrace();}
+					hand.writeMessage(0);
 				}catch(IOException p){p.printStackTrace();}
 			}
 		}
 	}
 	
-	/*
-	 * Windows CMD requires quotes around file paths so this function just adds quotes around a String
-	 */
-	public String add_quotes(String p){
-		String w = "\""+p+"\"";
-		return w;
-	}
 	//main function for testing purposes
 	public static void main(String[] args){
 		URL path = train_and_predict.class.getResource("BCItester.txt");

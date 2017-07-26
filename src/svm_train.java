@@ -51,7 +51,7 @@ class svm_train {
 		System.exit(1);
 	}
 
-	private void do_cross_validation()
+	private double do_cross_validation()
 	{
 		int i;
 		int total_correct = 0;
@@ -87,9 +87,36 @@ class svm_train {
 					++total_correct;
 			System.out.print("Cross Validation Accuracy = "+100.0*total_correct/prob.l+"%\n");
 		}
+		return 100.0*total_correct/prob.l;
 	}
 	
-	private void run(String argv[]) throws IOException
+	public static void run_Directory(String dir_path, String arguments){
+		svm_train t = new svm_train();
+		File dir = new File(dir_path);
+		File[] listOfFiles = dir.listFiles();
+		String[] arg;
+		String combined;
+		String path = "";
+		for(File file:listOfFiles){
+			path = file.getAbsolutePath();
+			if(arguments!=null){
+				String[] temp_split = arguments.split(" ");
+				arg = new String[temp_split.length +1];
+				System.arraycopy(temp_split, 0, arg, 0, temp_split.length);
+				arg[arg.length-1] = path;
+			}
+			else{
+				combined = path;
+				arg = new String[1];
+				arg[0] = combined;
+			}
+			try{
+				t.run(arg);
+			}catch(IOException e){e.printStackTrace();}
+		}
+	}
+	
+	public double run(String argv[]) throws IOException
 	{
 		parse_command_line(argv);
 		read_problem();
@@ -103,20 +130,24 @@ class svm_train {
 
 		if(cross_validation != 0)
 		{
-			do_cross_validation();
+			return do_cross_validation();
 		}
 		else
 		{
 			model = svm.svm_train(prob,param);
 			svm.svm_save_model(model_file_name,model);
 		}
+		return -1.0;
 	}
-
+	//main function will be for testing only
 	public static void main(String argv[]) throws IOException
 	{
-		svm_train t = new svm_train();
-		//t.run(argv);
-		t.run("C:/Users/Ryan Yu/workspace/ImportantFreq/src/FilteredDataFolder/Bob/Best Frequency Set");
+//		svm_train t = new svm_train();
+//		t.run(argv);
+//		String[] test = new String[1];
+//		test[0] = "C:/Users/Ryan Yu/workspace/ImportantFreq/src/FilteredDataFolder/Bob/Best Frequency Set/Channel0_540.txt";
+//		t.run(test);
+		//run_Directory("C:/Users/Ryan Yu/workspace/ImportantFreq/src/FilteredDataFolder/Bob/Best Frequency Set/", "-v 4");
 	}
 
 	private static double atof(String s)

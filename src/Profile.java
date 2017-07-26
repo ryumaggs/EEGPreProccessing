@@ -49,48 +49,45 @@ public class Profile {
 	//and then assigns their accuracies to the weights array	
 	public void createProfile(String foldername){
 		String path = "src/FilteredDataFolder/" + foldername;
+		String[] arg;
+		String file_path = "";
+		String curChannel;
+		String prevChannel = "";
+		String file_name;
 		File folder = new File(path);
 		File[] listOfFiles = folder.listFiles();
+		File[] bestFiles = new File[8];
 		double[] bestAccuracy = new double[8];
 		int accCount = -1;
-		String prevChannel = "";
-		String curChannel;
-		File[] bestFiles = new File[8];
-		
-		String file_name;
+		svm_train t= new svm_train();
 		try{
-			for(File file: listOfFiles){
-				if(!file.isDirectory()){
-					file_name = file.getName();
-					curChannel = file_name.split("_")[0];
-					System.out.println("looking at: " + file_name);
-					ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", "java -classpath libsvm.jar svm_train -v 10 " + path + "\\"+file_name+"\"");
-					Process process = builder.start();
-					BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-					String line;
-					while (true){
-						line = reader.readLine();
-						if(line!=null && check_header(line,"Cross") == 1){
-							double curAccuracy = Double.parseDouble(line.split(" ")[4].split("%")[0]);
-							if(curChannel.equals(prevChannel)){
-								if(curAccuracy > bestAccuracy[accCount]){
-									bestAccuracy[accCount] = curAccuracy;
-									bestFiles[accCount] = file;
-								}
-							}
-							else{
-								prevChannel = curChannel;
-								accCount++;
-								bestAccuracy[accCount] = curAccuracy;
-								bestFiles[accCount] = file;
-							}
-							break;
-						}	
+			for(File file:listOfFiles){
+				file_name = file.getName();
+				curChannel = file_name.split("_")[0];
+				file_path = file.getAbsolutePath();
+				
+				arg = new String[3];
+				arg[0] = "-v";
+				arg[1] = "5";
+				arg[2] = file_path;
+			
+				double curAccuracy = t.run(arg);
+				
+				if(curChannel.equals(prevChannel)){
+					if(curAccuracy > bestAccuracy[accCount]){
+						bestAccuracy[accCount] = curAccuracy;
+						bestFiles[accCount] = file;
 					}
 				}
+				else{
+					prevChannel = curChannel;
+					accCount++;
+					bestAccuracy[accCount] = curAccuracy;
+					bestFiles[accCount] = file;
+				}
 			}
-				System.arraycopy(bestAccuracy, 0, weights, 0, bestAccuracy.length);
-				createBestFreqDir(path, bestFiles);
+			System.arraycopy(bestAccuracy, 0, weights, 0, bestAccuracy.length);
+			createBestFreqDir(path, bestFiles);
 		}catch (IOException e){e.printStackTrace();}
 	}
 	
@@ -142,7 +139,7 @@ public class Profile {
 		return str.toString();
 	}
 	
-	public int makeDecision(int[] modelDecisions){
+	public int makeDecision(double[] modelDecisions){
 		double weightedAverage = 0;
 		for(int idx=0; idx < modelDecisions.length; idx++){
 			weightedAverage += modelDecisions[idx]*weights[idx];
