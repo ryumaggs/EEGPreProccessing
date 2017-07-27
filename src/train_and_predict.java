@@ -15,7 +15,7 @@ public class train_and_predict extends Frame implements ActionListener{
 	 * Buttons for GUI:
 	 * 1. set_path: 	Button that will allow user to select directory containing training data
 	 * 2. svm_path: 	Button that allows user to set directory path for the SVM
-	 * 3. train: 		once 1 and 2 have been set, will create a separate process to run the svm training
+	 * 3. train: 		once 1 and 2 have been set, will run the svm training
 	 * 4. closeHand: 	pre-made button that will cause hand to close via svm_predict
 	 * 5. openHand:		pre-made button that will cause hand to open via svm_predict
 	 */
