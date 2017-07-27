@@ -1,5 +1,10 @@
 import libsvm.*;
 import java.io.*;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 class svm_train {
@@ -9,6 +14,7 @@ class svm_train {
 	private String input_file_name;		// set by parse_command_line
 	private String model_file_name;		// set by parse_command_line
 	private String error_msg;
+	private String pure_file_name;
 	private int cross_validation;
 	private int nr_fold;
 
@@ -90,7 +96,7 @@ class svm_train {
 		return 100.0*total_correct/prob.l;
 	}
 	
-	public static void run_Directory(String dir_path, String arguments){
+	public static void run_Directory(String dir_path, String arguments, String alternate_destination){
 		svm_train t = new svm_train();
 		File dir = new File(dir_path);
 		File[] listOfFiles = dir.listFiles();
@@ -111,12 +117,12 @@ class svm_train {
 				arg[0] = combined;
 			}
 			try{
-				t.run(arg);
+				t.run(arg,alternate_destination);
 			}catch(IOException e){e.printStackTrace();}
 		}
 	}
 	
-	public double run(String argv[]) throws IOException
+	public double run(String argv[], String model_folder) throws IOException
 	{
 		parse_command_line(argv);
 		read_problem();
@@ -135,10 +141,12 @@ class svm_train {
 		else
 		{
 			model = svm.svm_train(prob,param);
-			svm.svm_save_model(model_file_name,model);
+			System.out.println(model_file_name);
+			svm.svm_save_model(model_folder+"\\"+pure_file_name,model);
 		}
 		return -1.0;
 	}
+	
 	//main function will be for testing only
 	public static void main(String argv[]) throws IOException
 	{
@@ -293,6 +301,8 @@ class svm_train {
 
 	private void read_problem() throws IOException
 	{
+		File file = new File(input_file_name);
+		pure_file_name = file.getName() + ".model";
 		BufferedReader fp = new BufferedReader(new FileReader(input_file_name));
 		Vector<Double> vy = new Vector<Double>();
 		Vector<svm_node[]> vx = new Vector<svm_node[]>();
