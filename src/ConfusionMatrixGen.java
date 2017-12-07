@@ -142,7 +142,7 @@ public class ConfusionMatrixGen {
 				File[] listOfFiles = folder.listFiles();
 				for(int i = 0; i < listOfFiles.length; i++){
 					System.out.println("file name: " + listOfFiles[i].getName());
-					svm_train.run_Directory(listOfFiles[i].getAbsolutePath(), "-v 2 -t 0 -b 1", folder.getAbsolutePath());
+					svm_train.run_Directory(listOfFiles[i].getAbsolutePath(), "-v 5 -t 0", folder.getAbsolutePath());
 				}
 			}
 		}
