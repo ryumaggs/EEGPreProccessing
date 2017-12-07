@@ -2,16 +2,14 @@ import java.util.*;
 import java.io.*;
 
 public class RawFilter {
-	private static int num_trials_global;
-	private static final int NUM_DATA_POINTS = 128;
+	private static int num_trials_global = 40;
+	private static final int NUM_DATA_POINTS = 1000;
 	private static final Complex NUMBER_MARKER = new Complex(123,456);
-	private static final int NUM_CHANNELS = 8;
+	private static final int NUM_CHANNELS = 32;
 	
 	private Complex[][] parsedunfilteredData;
 	private Complex[][] filteredData;
-	private Complex[][] transposedData;
 	private Complex[][] compressedData;
-	private int[][] frequency_ranges;
 	
 	final String CLOSED = "CLOSED";
 	final String OPEN = "OPEN";
@@ -22,56 +20,56 @@ public class RawFilter {
 	 * by Robert Sedgewick and Kevin Wayne, and found on the princeton.edu CS department website
 	 * URL: algs4.cs.princeton.edu/99scientific/Complex.java.html
 	 */
-	public RawFilter(String dirPath, String destination, int chan){
+	public RawFilter(String dirPath, String destination, int chan, int inverse){
 		File folder = new File(dirPath);
 		File[] listOfFiles = folder.listFiles();
 		long time_begin = 0;
 		long time_end = 0;
 		long total_time = 0;
-		frequency_ranges = new int[2][4];
-		frequency_ranges[0][0] = 5;
-		frequency_ranges[1][0] = 40;
-		frequency_ranges[0][1] = 5;
-		frequency_ranges[1][1] = 14;
-		frequency_ranges[0][2] = 8;
-		frequency_ranges[1][2] = 12;
-		frequency_ranges[0][3] = 10;
-		frequency_ranges[1][3] = 14;
-		
 		for(File file : listOfFiles){
-			if (file.isFile()){
-				time_begin = System.currentTimeMillis();
-				num_trials_global = 0;
+			System.out.println(file.getName());
+			if (file.isDirectory()){
+				File secFolder = file;
+				File[] listOfFiles2 = secFolder.listFiles();
+				for(File file2 : listOfFiles2){
+					System.out.println(file2.getName());
+					time_begin = System.currentTimeMillis();
+					num_trials_global = 0;
 				
-				System.out.println("\n-----------------------");
-				int trial_type = check_file_type(file);
+					System.out.println("\n-----------------------");
+					int trial_type = check_file_type(file2);
+					if(!(file2.getName().substring(0,1).equals("b")))
+						continue;
+					parsedunfilteredData = parseRecordingData(file2);
+					System.out.println("finished parsing data");
 				
-				parsedunfilteredData = parseRecordingData(file);
-				System.out.println("finished parsing data");
-				
-				compressedData= baselineCorrect_and_Compress_data(parsedunfilteredData);
-				System.out.println("compressed and baseline corrected the data");
-				
-				int low_frequency_bound = 0;
-				int high_frequency_bound = 0;
-				
-				for(int i = 0; i < frequency_ranges[0].length; i++){
-					low_frequency_bound = frequency_ranges[0][i];
-					high_frequency_bound = frequency_ranges[1][i];
-
-					filteredData = bandpassfilter(compressedData, 256, low_frequency_bound, high_frequency_bound);
+					//compressedData= baselineCorrect_and_Compress_data(parsedunfilteredData);
+					//System.out.println("compressed and baseline corrected the data");
+					compressedData = parsedunfilteredData;
+					int low_frequency_bound = 0;
+					int high_frequency_bound = 40;
 					
-					writeToFile(destination,trial_type,Integer.toString(low_frequency_bound)+Integer.toString(high_frequency_bound));
+					//System.out.println(compressedData[0].length);
+//					for(int i = 0; i < 1; i++){
+//						System.out.println("");
+//						for(int j = 0; j < compressedData[i].length; j++){
+//							System.out.print(compressedData[i][j]+" ");
+//						}
+//					}
+					//System.exit(1);
+					filteredData = bandpassfilter(compressedData, 1000, low_frequency_bound, high_frequency_bound);
 					
+					writeToFile(file.getAbsolutePath(),trial_type,Integer.toString(low_frequency_bound)+Integer.toString(high_frequency_bound));
+				
 					System.out.println("bandpassfiltered and saved the data for freq range: " + low_frequency_bound +"," + high_frequency_bound);
 				}
 				time_end = System.currentTimeMillis();
 				total_time += (time_end - time_begin);
 			}
+			System.out.println("-----------------------");
+			System.out.println("\ntotal time taken: " + total_time + " milliseconds");
+			System.out.println("\nDone.");
 		}
-		System.out.println("-----------------------");
-		System.out.println("\ntotal time taken: " + total_time + " milliseconds");
-		System.out.println("\nDone.");
 	}
 	
 	public int check_file_type(File file){
@@ -86,61 +84,23 @@ public class RawFilter {
 	}
 	
 	private Complex[][] parseRecordingData(File dataFile){
-		int stage_tracker = 0;
-		double old_sample_counter = 0;
-		double sample_counter = 0;
-		int last_sample_flag = 0;
-		int second_counter = 0;
-		int total_seconds = 0;
-		
 		Scanner scan;
 		String s="";
 		ArrayList<Complex[]> nonTransposedData = new ArrayList<Complex[]>();
 		Complex[][] array_nonTransposedData;
 		try {
 			scan = new Scanner(dataFile);
-			
-			//first five lines are just headers; skip.
-			for(int i=0; i <=5; i++){
-				scan.nextLine();
-			}
-			
-			/*
-			 * Goal: add a mark 3 seconds into the recording, and then every 5 seconds. This marker should
-			 * match when the GO prompt plays so the data we want can be easily found later
-			 * 
-			 * stage_tracker == 0 || waiting until 3 seconds in to add first marker
-			 * stage_tracker == 1 || now adding a marker every 5 seconds
-			 */
-			while(scan.hasNextLine()){
-				s = scan.nextLine();
-				
-				if(s.equals(MARKER) || s.equals("CHANGED MY IMAGE HERE BOYS"))
-					continue;
-				
-				old_sample_counter = sample_counter;
-				sample_counter = getIndex(s);
-				nonTransposedData.add(String_to_Complex_Arr(s));
-				
-				if(old_sample_counter > sample_counter){
-					second_counter+=1;
-					total_seconds+=1;
+			for(int trial = 0; trial < 40; trial++){
+				//skip first 100 lines of each trial
+				for(int i=0; i <100; i++){
+					scan.nextLine();
 				}
-				//need to delete this once data recording works properly. 
-				if(total_seconds >= 75){
-					break;
-				}
-				
-				if(stage_tracker == 0 && second_counter == 3){
-					stage_tracker = 1;
-					second_counter = 0;
-					nonTransposedData.add(addMarker());
-					num_trials_global+=1;
-				}
-				if (stage_tracker == 1 && second_counter == 5 && last_sample_flag == 0){
-					nonTransposedData.add(addMarker());
-					num_trials_global+=1;
-					second_counter = 0;
+				//record the next 1000
+				for(int i = 0; i < 1000; i++){
+					s = scan.nextLine();
+
+					nonTransposedData.add(String_to_Complex_Arr(s));
+
 				}
 			}
 			scan.close();
@@ -153,7 +113,7 @@ public class RawFilter {
 		for(int row = 0; row < num_row; row++){
 			array_nonTransposedData[row] = nonTransposedData.get(row);
 		}
-		
+
 		return array_nonTransposedData;
 	}
 	
@@ -162,7 +122,7 @@ public class RawFilter {
 		Complex[] curChan = new Complex[NUM_CHANNELS];
 		double curVal;
 		for(int c=0; c < NUM_CHANNELS; c++){
-			curVal = Double.parseDouble(curData[c+1]);
+			curVal = Double.parseDouble(curData[c]);
 			curChan[c] = new Complex(curVal, 0);
 		}
 		return curChan;
@@ -186,30 +146,15 @@ public class RawFilter {
 	 * subtract that average from your desired data
 	 */
 	public Complex[][] baselineCorrect_and_Compress_data(Complex[][] parsed_data){
-		double avg = 0.0;
-		int marker_flag = 0;
-		int data_counter = 0;
-		int compressed_index = 0;
-		Complex[][] zerod_compressed_data = new Complex[num_trials_global*NUM_DATA_POINTS][NUM_CHANNELS];
+		Complex[][] zerod_compressed_data = new Complex[40*NUM_DATA_POINTS][NUM_CHANNELS];
 		for (int channel = 0; channel < NUM_CHANNELS; channel++){
-			compressed_index = 0;
-			for (int sample = 0; sample < parsed_data.length; sample++){
-				if (marker_flag == 1){
-					zerod_compressed_data[compressed_index][channel] = parsed_data[sample][channel].minus(new Complex(avg, 0));
-					data_counter++;
+			int cur_samp = 0;
+			int compressed_index = 0;
+			for(int trial = 0; trial < 40; trial++){
+				double aveg = average(channel, cur_samp, cur_samp+50, parsed_data);
+				for (int samp = (cur_samp + 50); samp < (cur_samp+50) + NUM_DATA_POINTS; samp++){
+					zerod_compressed_data[compressed_index][channel] = parsed_data[samp][channel].minus(new Complex(aveg, 0));
 					compressed_index++;
-				}
-				if(compressed_index >= zerod_compressed_data.length){
-					break;
-				}
-				if (parsed_data[sample][channel].equals(NUMBER_MARKER)){
-					avg = average(channel,sample-50,sample-1,parsed_data);
-					marker_flag = 1;
-				}
-				if(data_counter == NUM_DATA_POINTS){
-					marker_flag = 0;
-					data_counter = 0;
-					avg = 0;
 				}
 			}
 		}
@@ -231,22 +176,35 @@ public class RawFilter {
 	 */
 	
 	public static Complex[][] bandpassfilter(Complex[][] data, int samprate, int lpfreq, int hpfreq){
-		int num_data = data.length;
+		int num_data = data.length+(24*40);
 		int array_index = 0;
-		Complex[] single_trial_filtereddata = new Complex[NUM_DATA_POINTS];
-		Complex[] fft_single_trial_filtereddata = new Complex[NUM_DATA_POINTS];
+		Complex[] single_trial_filtereddata = new Complex[1024];
+		Complex[] fft_single_trial_filtereddata = new Complex[1024];
 		Complex[][] filtereddata = new Complex[num_data][NUM_CHANNELS];
 		
 		for(int channel = 0; channel < NUM_CHANNELS; channel++){
-			for(int trial_count = 0; trial_count<num_trials_global;trial_count++){
-				for(int sampleIndex = 0; sampleIndex< NUM_DATA_POINTS; sampleIndex++){
-					single_trial_filtereddata[sampleIndex] = data[NUM_DATA_POINTS*trial_count + sampleIndex][channel];
+			array_index = 0;
+			for(int trial_count = 0; trial_count<40;trial_count++){
+				//System.out.println(trial_count);
+				single_trial_filtereddata = resetToZero(single_trial_filtereddata);
+				
+				for(int sampleIndex = (trial_count * 1000); sampleIndex< (trial_count * 1000) + 1000; sampleIndex++){
+					//System.out.println(sampleIndex);
+					single_trial_filtereddata[sampleIndex%1000] = data[sampleIndex][channel];
 				}
-				
+//				for(int i = 0; i < single_trial_filtereddata.length; i++){
+//					System.out.print(single_trial_filtereddata[i]+" ");
+//				}
+//				System.exit(1);
 				fft_single_trial_filtereddata = Complex.fft(single_trial_filtereddata);
-				
-				for(int freq = 0; freq < NUM_DATA_POINTS; freq++){
-					double curFreq = (double)freq * samprate / NUM_DATA_POINTS;
+//				for(int i = 0; i < fft_single_trial_filtereddata.length; i++){
+//					System.out.print(fft_single_trial_filtereddata[i].toString()+", ");
+//				}
+//				System.exit(1);
+				//reset the DC
+				fft_single_trial_filtereddata[0] = new Complex(0,0);
+				for(int freq = 0; freq < 1024; freq++){
+					double curFreq = (double)freq * samprate / 1024;
 					if(curFreq >= lpfreq && curFreq <= hpfreq){
 						fft_single_trial_filtereddata[freq] = fft_single_trial_filtereddata[freq].scale(2);
 					}
@@ -255,7 +213,7 @@ public class RawFilter {
 					}
 				}
 				
-				for(int copy_counter = 0; copy_counter < NUM_DATA_POINTS; copy_counter++){
+				for(int copy_counter = 0; copy_counter < 1024; copy_counter++){
 					filtereddata[array_index][channel] = fft_single_trial_filtereddata[copy_counter];
 					array_index+=1;
 				}
@@ -265,6 +223,18 @@ public class RawFilter {
 		return filtereddata;
 	}
 	
+	public static Complex[] resetToZero(Complex[] arr){
+		Complex[] ret = new Complex[arr.length];
+		for(int i = 0; i < ret.length; i++){
+			ret[i] = new Complex(0,0);
+		}
+		return ret;
+	}
+	public static void addZeros(Complex[] arr){
+		for(int i = 1000; i < 1024; i++){
+			arr[i] = new Complex(0,0);
+		}
+	}
 	public void writeToFile(String destination, int trial_type, String freq_range){
 		try{
 			int sample_index = 0;
@@ -276,7 +246,7 @@ public class RawFilter {
 				PrintWriter out = new PrintWriter(bw);
 				sample_index = 0;
 				for (int sampleIndex = 0; sampleIndex < filteredData.length; sampleIndex++){
-					if (sample_index >= NUM_DATA_POINTS){
+					if (sample_index >= NUM_DATA_POINTS+24){
 						sample_index = 0;
 						out.print("\n");
 					}
@@ -286,10 +256,9 @@ public class RawFilter {
 					}
 					
 					if (filteredData[sampleIndex][channel].re() == 0 && filteredData[sampleIndex][channel].im()== 0){
-						sample_index++;
-						continue;
-					}
-					
+							sample_index++;
+							continue;
+						}
 					out.print(sample_index+":"+filteredData[sampleIndex][channel].abs());
 					out.print(" ");
 					
@@ -301,8 +270,27 @@ public class RawFilter {
 		} catch (IOException e){}
 	}
 	
+	public void plot_to_file (String destination, int trial_type, String freq_range){
+		try{
+			System.out.println("plotting to file");
+			File file = new File(destination + "\\plot_"+freq_range+".txt");
+			FileWriter fw = new FileWriter(file,true);
+			BufferedWriter bw = new BufferedWriter(fw);
+			PrintWriter out = new PrintWriter(bw);
+			
+			for(int sampIndex = 0; sampIndex < filteredData.length; sampIndex++){
+				for(int channel = 0; channel < NUM_CHANNELS; channel++){
+					out.print(filteredData[sampIndex][channel].abs());
+					out.print(" ");
+				}
+				out.print("\n");
+			}
+			out.close();
+		}catch(IOException e){e.printStackTrace();}
+	}
+	
 	//main function is for testing purposes
 	public static void main(String[] args){
-		RawFilter test = new RawFilter("src/RawDataFolder","src/FilteredDataFolder", 8);
+		RawFilter test = new RawFilter("C:/Users/Ryan Yu/Desktop/SeniorThesis Data/4/b2","C:/Users/Ryan Yu/Desktop/SeniorThesis Data/4/b2", 33,0);
 	}
 }
