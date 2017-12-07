@@ -9,7 +9,7 @@ import java.util.*;
 
 class svm_train {
 	private svm_parameter param;		// set by parse_command_line
-	private svm_problem prob;		// set by read_problem
+	private svm_problem prob;			// set by read_problem
 	private svm_model model;
 	private String input_file_name;		// set by parse_command_line
 	private String model_file_name;		// set by parse_command_line
@@ -88,9 +88,11 @@ class svm_train {
 		}
 		else
 		{
-			for(i=0;i<prob.l;i++)
+			for(i=0;i<prob.l;i++){
+				//System.out.println("PREDICTION: " + prob.y[i] + " AND ANSWER: " + target[i]);
 				if(target[i] == prob.y[i])
 					++total_correct;
+			}
 			System.out.print("Cross Validation Accuracy = "+100.0*total_correct/prob.l+"%\n");
 		}
 		return 100.0*total_correct/prob.l;
@@ -103,8 +105,23 @@ class svm_train {
 		String[] arg;
 		String combined;
 		String path = "";
+		String fin = "";
+		File results = new File(dir_path+"/results.txt");
+		try{
+			if (!results.exists())
+				results.createNewFile();
+		}catch(IOException e){e.printStackTrace();}
+		
 		for(File file:listOfFiles){
+			if (file.getName().substring(0,1).equals("C")||file.getName().substring(0,1).equals("b")||file.getName().substring(0,1).equals("r"))
+				continue;
+			else{
+				String temp = file.getName().substring(0,2);
+				if(temp.substring(1,2).equals("_"))
+					temp = temp.substring(0,1);
+			}
 			path = file.getAbsolutePath();
+			System.out.println("looking at file: " + file.getName());
 			if(arguments!=null){
 				String[] temp_split = arguments.split(" ");
 				arg = new String[temp_split.length +1];
@@ -117,9 +134,40 @@ class svm_train {
 				arg[0] = combined;
 			}
 			try{
-				t.run(arg,alternate_destination);
+				double ret2 = t.run(arg,alternate_destination);
+				String sfileName = file.getName();
+				String toWrite = sfileName+","+ret2+"\n";
+				fin = fin + toWrite;
 			}catch(IOException e){e.printStackTrace();}
 		}
+		try{
+			FileOutputStream fileOut = new FileOutputStream(results);
+			fileOut.write(fin.getBytes());
+			fileOut.close();
+		}catch(IOException e){e.printStackTrace();}
+	}
+	
+	public static void run_indv_Directory(String dir_path, String arguments){
+		svm_train t = new svm_train();
+		File dir = new File(dir_path);
+		File[] listOfFiles = dir.listFiles();
+		String[] arg;
+		String combined;
+		String path = "";
+		if(arguments!=null){
+			String[] temp_split = arguments.split(" ");
+			arg = new String[temp_split.length +1];
+			System.arraycopy(temp_split, 0, arg, 0, temp_split.length);
+			arg[arg.length-1] = path;
+		}
+		else{
+			combined = path;
+			arg = new String[1];
+			arg[0] = combined;
+		}
+		try{
+			t.run(arg, dir_path);
+		} catch(IOException e){e.printStackTrace();}
 	}
 	
 	public double run(String argv[], String model_folder) throws IOException
@@ -248,6 +296,7 @@ class svm_train {
 					break;
 				case 'v':
 					cross_validation = 1;
+					System.out.println(argv[i]);
 					nr_fold = atoi(argv[i]);
 					if(nr_fold < 2)
 					{
@@ -303,6 +352,67 @@ class svm_train {
 	{
 		File file = new File(input_file_name);
 		pure_file_name = file.getName() + ".model";
+		BufferedReader fp = new BufferedReader(new FileReader(input_file_name));
+		Vector<Double> vy = new Vector<Double>();
+		Vector<svm_node[]> vx = new Vector<svm_node[]>();
+		int max_index = 0;
+
+		while(true)
+		{
+			String line = fp.readLine();
+			if(line == null) break;
+			//System.out.println(line);
+			StringTokenizer st = new StringTokenizer(line," \t\n\r\f:");
+//			String s;
+//			while((s = st.nextToken())!= null)
+//				System.out.println(s);
+//			System.exit(1);
+			vy.addElement(atof(st.nextToken()));
+			int m = st.countTokens()/2;
+			svm_node[] x = new svm_node[m];
+			for(int j=0;j<m;j++)
+			{
+				x[j] = new svm_node();
+				x[j].index = atoi(st.nextToken());
+				x[j].value = atof(st.nextToken());
+			}
+			if(m>0) max_index = Math.max(max_index, x[m-1].index);
+			vx.addElement(x);
+		}
+
+		prob = new svm_problem();
+		prob.l = vy.size();
+		prob.x = new svm_node[prob.l][];
+		for(int i=0;i<prob.l;i++)
+			prob.x[i] = vx.elementAt(i);
+		prob.y = new double[prob.l];
+		for(int i=0;i<prob.l;i++)
+			prob.y[i] = vy.elementAt(i);
+
+		if(param.gamma == 0 && max_index > 0)
+			param.gamma = 1.0/max_index;
+
+		if(param.kernel_type == svm_parameter.PRECOMPUTED)
+			for(int i=0;i<prob.l;i++)
+			{
+				if (prob.x[i][0].index != 0)
+				{
+					System.err.print("Wrong kernel matrix: first column must be 0:sample_serial_number\n");
+					System.exit(1);
+				}
+				if ((int)prob.x[i][0].value <= 0 || (int)prob.x[i][0].value > max_index)
+				{
+					System.err.print("Wrong input format: sample_serial_number out of range\n");
+					System.exit(1);
+				}
+			}
+
+		fp.close();
+	}
+	
+	private void read_problem2() throws IOException
+	{
+		File file = new File(input_file_name);
 		BufferedReader fp = new BufferedReader(new FileReader(input_file_name));
 		Vector<Double> vy = new Vector<Double>();
 		Vector<svm_node[]> vx = new Vector<svm_node[]>();
