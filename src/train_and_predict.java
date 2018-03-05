@@ -1,5 +1,4 @@
 import java.util.*;
-import java.lang.Runtime;
 import java.net.URL;
 import java.awt.*;
 import java.awt.event.*;
@@ -20,6 +19,7 @@ public class train_and_predict extends Frame implements ActionListener{
 	 * 5. openHand:		pre-made button that will cause hand to open via svm_predict
 	 */
 	JButton set_data;
+	JButton save_models;
 	JButton svm_path;
 	JButton set_model;
 	JButton set_sample;
@@ -30,6 +30,7 @@ public class train_and_predict extends Frame implements ActionListener{
 	JButton openHand;
 	JButton runHand;
 	JTextField dataPath;
+	JTextField save_modelPath;
 	JTextField modelPath;
 	JTextField samplePath;
 	JTextField profilePath;
@@ -57,7 +58,7 @@ public class train_and_predict extends Frame implements ActionListener{
 	
 	private void createGui(){
 		frame = new JFrame("train and predict");
-		frame.setSize(440,235);
+		frame.setSize(440,260);
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
@@ -68,6 +69,8 @@ public class train_and_predict extends Frame implements ActionListener{
 		
 		set_data = new JButton("Browse Data");
 		dataPath = new JTextField("Training Data Directory Path",20);
+		save_models = new JButton("Save trained models");
+		save_modelPath = new JTextField("Path for where models will be written");
 		train = new JButton("Train");
 		load_arm = new JButton("connect arm");
 		set_model = new JButton("Browse Model");
@@ -77,17 +80,15 @@ public class train_and_predict extends Frame implements ActionListener{
 		set_profile = new JButton("Browse Profile");
 		profilePath = new JTextField("Profile File Path", 20);
 		runHand = new JButton("Move Hand");
-//		closeHand = new JButton("close hand");
-//		openHand = new JButton("open hand");
+		
 		set_data.addActionListener(this);
+		save_models.addActionListener(this);
 		train.addActionListener(this);
 		load_arm.addActionListener(this);
 		set_model.addActionListener(this);
 		set_sample.addActionListener(this);
 		set_profile.addActionListener(this);
 		runHand.addActionListener(this);
-//		closeHand.addActionListener(this);
-//		openHand.addActionListener(this);
 		
 		JLabel padding = new JLabel();
 		padding.setPreferredSize(new Dimension (110,20));
@@ -102,41 +103,49 @@ public class train_and_predict extends Frame implements ActionListener{
 		constraint.gridx = 2;
 		constraint.gridy = 0;
 		panel.add(set_data, constraint);
+		constraint.gridwidth = 2;
 		constraint.gridx = 0;
 		constraint.gridy = 1;
+		panel.add(save_modelPath, constraint);
+		constraint.gridwidth = 1;
+		constraint.gridx = 2;
+		constraint.gridy = 1;
+		panel.add(save_models, constraint);
+		constraint.gridx = 0;
+		constraint.gridy = 2;
 		panel.add(padding, constraint);
 		constraint.gridx = 1;
-		constraint.gridy = 1;
+		constraint.gridy = 2;
 		panel.add(train, constraint);
 		constraint.gridx = 1;
-		constraint.gridy = 2;
+		constraint.gridy = 3;
 		panel.add(load_arm, constraint);
 		constraint.gridwidth = 2;
 		constraint.gridx = 0;
-		constraint.gridy = 3;
+		constraint.gridy = 4;
 		panel.add(modelPath, constraint);
 		constraint.gridwidth = 1;
 		constraint.gridx = 2;
-		constraint.gridy = 3;
+		constraint.gridy = 4;
 		panel.add(set_model, constraint);
 		constraint.gridwidth = 2;
 		constraint.gridx = 0;
-		constraint.gridy = 4;
+		constraint.gridy = 5;
 		panel.add(profilePath, constraint);
 		constraint.gridwidth = 1;
 		constraint.gridx = 2;
-		constraint.gridy = 4;
+		constraint.gridy = 5;
 		panel.add(set_profile, constraint);
 		constraint.gridwidth = 2;
 		constraint.gridx = 0;
-		constraint.gridy = 5;
+		constraint.gridy = 6;
 		panel.add(samplePath, constraint);
 		constraint.gridwidth = 1;
 		constraint.gridx = 2;
-		constraint.gridy = 5;
+		constraint.gridy = 6;
 		panel.add(set_sample, constraint);
 		constraint.gridx = 1;
-		constraint.gridy = 6;
+		constraint.gridy = 7;
 		panel.add(runHand, constraint);
 		
 		frame.add(panel);
@@ -148,7 +157,7 @@ public class train_and_predict extends Frame implements ActionListener{
 		Object holder = e.getSource();
 		
 		//opens file choosers to save directory paths
-		if (holder == set_data || holder == set_model || holder == set_sample || holder == set_profile){
+		if (holder == set_data || holder == set_model || holder == set_sample || holder == set_profile || holder == save_models){
 			JFileChooser chose = new JFileChooser(new File(System.getProperty("user.home") + System.getProperty("file.seperator")+"Desktop"));
 			chose.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 			int result = chose.showSaveDialog(this);
@@ -167,6 +176,9 @@ public class train_and_predict extends Frame implements ActionListener{
 					Profile.load_profile(profilePath.getText(), profile);
 					profileIsSet = true;
 				}
+				else if(holder == save_models){
+					save_modelPath.setText(chose.getSelectedFile().getAbsolutePath());
+				}
 				else{
 					samplePath.setText(chose.getSelectedFile().getAbsolutePath());
 					sampleIsSet = true;
@@ -180,7 +192,7 @@ public class train_and_predict extends Frame implements ActionListener{
 				System.out.println("error: Training Data Directory Path is not set");
 			else{
 				System.out.println("started training proccess...");
-				svm_train.run_Directory(dataPath.getText(), null);
+				svm_train.run_Directory(dataPath.getText(), null, save_modelPath.getText());
 				System.out.println("\ntraining proccess complete");
 			}
 		}

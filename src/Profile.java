@@ -45,7 +45,7 @@ public class Profile {
 		return 1;
 	}
 	
-	//runs svm_train cross validation 10-fold for each channel separately
+	//runs svm_train cross validation 5-fold for each channel separately
 	//and then assigns their accuracies to the weights array	
 	public void createProfile(String foldername){
 		String path = "src/FilteredDataFolder/" + foldername;
@@ -71,7 +71,7 @@ public class Profile {
 				arg[1] = "5";
 				arg[2] = file_path;
 			
-				double curAccuracy = t.run(arg);
+				double curAccuracy = t.run(arg,path);
 				
 				if(curChannel.equals(prevChannel)){
 					if(curAccuracy > bestAccuracy[accCount]){
@@ -155,9 +155,9 @@ public class Profile {
 	}
 	
 	public static void main(String args[]){
-		Profile bob = new Profile("Bob");
+		Profile george = new Profile("George");
 		//System.out.println(Arrays.toString(bob.weights));
-		save_profile(bob);
+		save_profile(george);
 		System.out.println("Successful Execution");
 	}
 }

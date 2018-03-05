@@ -1,6 +1,10 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import sun.audio.*;
+import java.io.File;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -12,6 +16,7 @@ import javax.swing.JLabel;
 
 public class Experiment implements ActionListener,Runnable{
 	private ImageIcon[] Images;
+	private Clip[] soundClips;
 	private JFrame buildStage;
 	private JPanel panel;
 	private JLabel label;
@@ -28,19 +33,24 @@ public class Experiment implements ActionListener,Runnable{
 	}
 	
 	public Experiment(String photoDir, String outputfile, String port){		
-		netStream = new DataStreaming();
-		netStream.setupconnection(outputfile, port);
-		output = netStream.getOutputWriter();
-		System.out.println("Datastream Initializing...");
-		
+		//netStream = new DataStreaming();
+		//netStream.setupconnection(outputfile, port);
+		//output = netStream.getOutputWriter();
+		//System.out.println("Datastream Initializing...");
+		soundClips = new Clip[7];
 		try{
-			output.write('v');
-			Thread.sleep(2000);
-			output.write('b');
-			System.out.println("Datastream started");
+//			output.write('v');
+//			Thread.sleep(2000);
+//			output.write('b');
+//			System.out.println("Datastream started");
 			loadImages(photoDir);
+			loadAudio();
 		}catch(Exception e){e.printStackTrace();}
-		
+//		
+//		for(int i = 0; i < soundClips.length; i++){
+//			playAudio(i);
+//		}
+		//System.exit(1);
 		//set up the frame for image slide show
 		buildStage = new JFrame("Experiment");
 		buildStage.setSize(1000, 1000);
@@ -51,6 +61,9 @@ public class Experiment implements ActionListener,Runnable{
 		panel.add(label,BorderLayout.CENTER);
 		buildStage.add(panel,BorderLayout.CENTER);
 		buildStage.setVisible(true);
+		
+		//set up audio files
+		
 	}
 	
 	public void scroll_images(){
@@ -61,14 +74,8 @@ public class Experiment implements ActionListener,Runnable{
 			Thread.sleep(1000);
 			while(true){
 				label.setIcon(Images[currentImageIndex]);
-				Thread.sleep(1000);
-				
-				label.setIcon(null);
-				Thread.sleep(1000);
-		
-				label.setIcon(Images[currentImageIndex]);
-		
-				Thread.sleep(1000);
+				playAudio(currentImageIndex);
+				//Thread.sleep(1000);
 				currentImageIndex++;
 				
 				if(currentImageIndex >= Images.length)
@@ -83,7 +90,7 @@ public class Experiment implements ActionListener,Runnable{
 					break;
 				}
 			}
-		}catch(InterruptedException ep){ep.printStackTrace();}
+		}catch(Exception ep){ep.printStackTrace();}
 		netStream.endstream();
 		System.out.print("experiment complete");
 		System.exit(1);
@@ -96,6 +103,35 @@ public class Experiment implements ActionListener,Runnable{
 		for (int i = 0; i < directoryListing.length; i++){
 			Images[i] = new ImageIcon(directoryListing[i].getPath());
 		}
+	}
+	
+	public void loadAudio(){
+		try {
+			File directory = new File("C://Users//Ryan Yu//workspace//ImportantFreq//src//SoundFiles");
+			File[] dir = directory.listFiles();
+			int count = 0;
+			Clip tempClip;
+			for(File file:dir){
+				tempClip= AudioSystem.getClip();
+				tempClip.open(AudioSystem.getAudioInputStream(file));
+				soundClips[count] = tempClip;
+				count++;
+			}
+//			Clip clip = AudioSystem.getClip();
+//			clip.open(AudioSystem.getAudioInputStream(file));
+//			System.out.println("before play");
+//			clip.start();
+//			Thread.sleep(clip.getMicrosecondLength()/1000+500);
+//			System.out.println("after play");
+//			} catch (Exception murle) {
+//			System.out.println(murle);
+		}catch(Exception e){e.printStackTrace();}
+	}
+	public void playAudio(int file_num){ //need to make an array of these. what data type are they??
+		soundClips[file_num].start();
+		try{
+			Thread.sleep(soundClips[file_num].getMicrosecondLength()/1000+100);
+		}catch(Exception e){e.printStackTrace();}
 	}
 	
 	public void run(){

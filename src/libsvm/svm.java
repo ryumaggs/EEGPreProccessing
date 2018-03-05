@@ -2113,7 +2113,7 @@ public class svm {
 				nz_count[i] = nSV;
 			}
 
-			svm.info("Total nSV = "+nnz+"\n");
+			//svm.info("Total nSV = "+nnz+"\n");
 
 			model.l = nnz;
 			model.SV = new svm_node[nnz][];
